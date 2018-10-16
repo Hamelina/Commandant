@@ -1,0 +1,52 @@
+{
+    "interactionModel": {
+        "languageModel": {
+            "invocationName": "cook it",
+            "intents": [
+                {
+                    "name": "AMAZON.CancelIntent",
+                    "samples": []
+                },
+                {
+                    "name": "AMAZON.HelpIntent",
+                    "samples": []
+                },
+                {
+                    "name": "AMAZON.StopIntent",
+                    "samples": []
+                },
+                {
+                    "name": "AMAZON.NavigateHomeIntent",
+                    "samples": []
+                },
+                {
+                    "name": "SearchRecipe",
+                    "slots": [
+                        {
+                            "name": "recipeName",
+                            "type": "AMAZON.Food"
+                        }
+                    ],
+                    "samples": [
+                        "Je veux cuisiner {recipeName}",
+                        "Trouve moi la recette {recipeName}"
+                    ]
+                },
+                {
+                    "name": "SearchRecipeByIngredient",
+                    "slots": [
+                        {
+                            "name": "ingredientName",
+                            "type": "AMAZON.Food"
+                        }
+                    ],
+                    "samples": [
+                        "Je veux cuisiner un plat avec des {ingredientName}",
+                        "Je veux préparer un plat à base de {ingredientName}"
+                    ]
+                }
+            ],
+            "types": []
+        }
+    }
+}
