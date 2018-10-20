@@ -3,14 +3,14 @@ service: cookyt
 provider:
   name: aws
   runtime: nodejs8.10
-  region: eu-west-3
+  region: eu-west-1
   stage: dev
 
 functions:
-  hello:
-    handler: handler.hello
+  handler:
+    handler: index.handler
     events:
-      - http:
-          path: /
-          method: get
+      - alexaSkill: 
+        appId: amzn1.ask.skill.084bf9c3-8917-48d6-8608-3bc19fb3492d
+        enabled: true
 
