@@ -11,6 +11,6 @@ functions:
     handler: index.handler
     events:
       - alexaSkill: 
-        appId: amzn1.ask.skill.084bf9c3-8917-48d6-8608-3bc19fb3492d
+        appId: ${env:ALEXA_APP_ID}
         enabled: true
 

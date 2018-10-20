@@ -1,7 +1,7 @@
 'use strict';
 const Alexa = require('alexa-sdk');
 
-const APP_ID = 'amzn1.ask.skill.084bf9c3-8917-48d6-8608-3bc19fb3492d';
+const APP_ID = process.env.APP_ID;
 
 const SKILL_NAME = 'Cookyt';
 const HELLO_MESSAGE = "Hello World !";
@@ -15,8 +15,7 @@ const handlers = {
     this.emit('HelloWorld');
   },
   'HelloWorld': function () {
-    this.response.speak(HELLO_MESSAGE);
-      this.emit(':responseReady');
+      this.emit(':tell',"Hello World");
   },
   'AMAZON.HelpIntent': function () {
     const speechOutput = HELP_MESSAGE;
