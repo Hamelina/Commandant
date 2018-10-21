@@ -1,5 +1,8 @@
 'use strict';
 const Alexa = require('alexa-sdk');
+const AWS = require('aws-sdk'),
+	uuid = require('uuid'),
+	documentClient = new AWS.DynamoDB.DocumentClient(); 
 
 const APP_ID = process.env.APP_ID;
 
@@ -16,6 +19,21 @@ const handlers = {
   },
   'HelloWorld': function () {
       this.emit(':tell',"Hello World");
+  },
+  'AddPill': function (callback) {
+    var params = {
+      Item : {
+        "Id" : uuid.v1(),
+        "Name" : this.event.name
+      },
+      TableName : 'pills'
+    };
+    documentClient.put(params, function(err, data){
+      if (err)
+        console.log("Error", err, data);
+    });
+
+    this.emit(':tell','Medicament ajoutée avec succès !')
   },
   'AMAZON.HelpIntent': function () {
     const speechOutput = HELP_MESSAGE;
