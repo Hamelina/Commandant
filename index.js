@@ -2,7 +2,10 @@
 const Alexa = require('alexa-sdk');
 const AWS = require('aws-sdk'),
 	uuid = require('uuid'),
-	documentClient = new AWS.DynamoDB.DocumentClient(); 
+  documentClient = new AWS.DynamoDB.DocumentClient(); 
+  
+  // Set the region 
+AWS.config.update({region: 'eu-west-1'});
 
 const APP_ID = process.env.APP_ID;
 
@@ -20,20 +23,75 @@ const handlers = {
   'HelloWorld': function () {
       this.emit(':tell',"Hello World");
   },
-  'AddPill': function (callback) {
+  'AddUser': function () {
     var params = {
       Item : {
         "Id" : uuid.v1(),
-        "Name" : this.event.name
+        "FirstName" : this.event.firstName,
+        "LastName" : this.event.lastName
       },
-      TableName : 'pills'
+      TableName : 'users'
     };
     documentClient.put(params, function(err, data){
       if (err)
         console.log("Error", err, data);
     });
 
-    this.emit(':tell','Medicament ajoutée avec succès !')
+    this.emit(':tell','Profil ajouté avec succès !')
+  },
+  'findUser': function () {
+    var params = {
+      ExpressionAttributeValues: {
+        ':name' : {S: this.event.name}
+      },
+      FilterExpression: 'contains (FirstName, :name)',
+      TableName : 'users'
+    };
+    documentClient.scan(params, function(err, data){
+      if (err){
+        console.log("Error", err, data);
+      }
+      else {
+        console.log(data);
+        this.emit(':tell',data)    
+      }
+    });
+  },
+  'AddMedicine': function () {
+    var params = {
+      Item : {
+        "Id" : uuid.v1(),
+        "MedecineName" : this.event.name,
+        "Quantity": 0
+      },
+      TableName : 'medicines'
+    };
+    documentClient.put(params, function(err, data){
+      if (err)
+        console.log("Error", err, data);
+    });
+
+    this.emit(':tell','Medicament enregistré avec succès !')
+  },
+  'findMedicine': function () {
+    var params = {
+      ExpressionAttributeValues: {
+        ':name' : {S: this.event.name}
+      },
+      FilterExpression: 'contains (MedicineName, :name)',
+      TableName : 'medecines'
+    };
+    documentClient.scan(params, function(err, data){
+      if (err){
+        console.log("Error", err, data);
+      }
+      else {
+        console.log(data);
+        //this.emit(':tell',data)    
+      }
+    });
+
+    //this.emit(':tell','Medicament ajoutée avec succès !')
   },
   'AMAZON.HelpIntent': function () {
     const speechOutput = HELP_MESSAGE;
