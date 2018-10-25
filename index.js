@@ -115,7 +115,7 @@ const handlers = {
     'responseAddMedicine': function () {
       this.emit(':ask',"Quel est le nom du médicament ?")
   },
-  'findMedicine': function () {
+  'findMedicineByName': function () {
     var params = {
       ExpressionAttributeValues: {
         ':name' : {S: this.event.name}
@@ -128,11 +128,28 @@ const handlers = {
         console.log("Error", err, data);
       }
       else {
-        console.log(data);
+        console.log("Success", data);
         //this.emit(':tell',data)    
       }
     });
-
+    //this.emit(':tell','Medicament ajoutée avec succès !')
+  },
+  'deleteMedicineByName': function () {
+    var params = {
+      TableName: 'medecines',
+      ExpressionAttributeValues: {
+        ':name' : {S: this.event.name}
+      }
+    };
+    documentClient.deleteItem(params, function(err, data){
+      if (err){
+        console.log("Error", err, data);
+      }
+      else {
+        console.log("Success", data);
+        //this.emit(':tell',data)    
+      }
+    });
     //this.emit(':tell','Medicament ajoutée avec succès !')
   },
   'AMAZON.HelpIntent': function () {
