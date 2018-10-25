@@ -18,11 +18,52 @@ const UNHANDLED_MESSAGE = "Sorry i didn't understand that";
 
 const handlers = {
   'LaunchRequest': function () {
-    this.emit('HelloWorld');
+    this.emit(':ask','Voulez-vous ajouter un médicament ou consulter votre ordonance ?');
   },
-  'HelloWorld': function () {
-      this.emit(':tell',"Hello World");
-  },
+  'choiceAction': function () {
+    if(this.event.request.intent.slots.choiceActionHealth.value ==="consulter"){
+      this.emit(':ask',"Donnez moi le nom du médicament à consulter ?")
+    }else if(this.event.request.intent.slots.choiceActionHealth.value ==="ajouter"){
+      this.emit(':ask',"Qu'elle est le nom du médicament à ajouter ?")
+    }
+},
+
+  'choiceAddMedicine': function () {
+    this.attributes.nameMedecine = this.event.request.intent.slots.nameMedecine.value
+    this.emit(':ask',"Quel est la dose de "+ this.event.request.intent.slots.nameMedecine.value + " ?")
+},
+'choiceDose': function () {
+  this.attributes.doseMedecine = this.event.request.intent.slots.doseValue.value
+  this.attributes.typeDoseMedecine = this.event.request.intent.slots.typeDose.value
+  this.emit(':ask',"Quelle est la durée du traitement ?")
+},
+'durationMedecine': function () {
+  this.attributes.numberDurationMedecine = this.event.request.intent.slots.durationNumber.value
+  this.attributes.typeDurationMedecine = this.event.request.intent.slots.durationType.value
+  this.emit(':ask',"Nous allons lister les heures de prises quotidiennes, donnez moi la première heure de prise de la journée")
+},
+'giveHours': function () {
+  if(this.attributes.hoursMedicine){
+    this.attributes.hoursMedicine.push(this.event.request.intent.slots.hour.value)
+  }else{
+    this.attributes.hoursMedicine = [this.event.request.intent.slots.hour.value]
+  }
+  this.emit(':ask',"L'heure a été ajouté, avez-vous d'autres heures, répondez oui ou non")
+},
+'reapeatHour': function () {
+  if(this.event.request.intent.slots.responseRepeat.value === "oui"){
+    this.emit(':ask',"Donner une nouvelle heure")
+  }else if(this.event.request.intent.slots.responseRepeat.value === "non"){
+    /*this.emit(':ask',"L'ajout du médicament est terminé. Voici un récapitulatif, nom du médicament : " + this.attributes.nameMedecine + 
+    " dose : " + this.attributes.doseMedecine + this.attributes.typeDoseMedecine+
+    " durée : pendant" + this.attributes.numberDurationMedecine + this.attributes.typeDurationMedecine+
+    " pour les heures : "+ this.attributes.hoursMedicine.join(","))*/
+    this.emit(':ask',"La saisie est terminée")
+  }
+  
+},
+
+
   'AddUser': function () {
     var params = {
       Item : {
@@ -57,7 +98,7 @@ const handlers = {
       }
     });
   },
-  'AddMedicine': function () {
+  /*'AddMedicine': function () {
     var params = {
       Item : {
         "Id" : uuid.v1(),
@@ -70,8 +111,9 @@ const handlers = {
       if (err)
         console.log("Error", err, data);
     });
-
-    this.emit(':tell','Medicament enregistré avec succès !')
+  },*/
+    'responseAddMedicine': function () {
+      this.emit(':ask',"Quel est le nom du médicament ?")
   },
   'findMedicine': function () {
     var params = {
