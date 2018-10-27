@@ -4,17 +4,17 @@ const path = require('path')
 const key_rsa = fs.readFileSync(path.resolve(__dirname, './id_rsa'), 'utf8')
 
 const ssh = new SSH({
-    host: '0.tcp.ngrok.io',
-    port: 18536,
+    host: 'localhost',
+    port: 22,
     user: 'h',
     key : key_rsa
   });
  var rep = 'repodsfssdc';
   var promise1 = new Promise( function(resolve, reject) {
-    ssh.exec('mkdir ' + rep , {
+    ssh.exec('cd ' + "home && pwd" , {
       exit : function( code, stdout, stderr ){
           if(code == 0){
-            resolve("ok");
+            resolve(stdout);
           } else {
             reject(stderr);
           }
@@ -27,14 +27,11 @@ const ssh = new SSH({
       });
   });
   promise1.then(function(value) {
-    console.log("Le repertoire a bien été créé");
+    console.log("Vous etes bien deplacer " + value);
  //    _self.emit(':ask',value);
     })
     .catch(function(error) {
       console.log("Problème " + error); // "zut !"
-    })
-    .then(function(e){
-        console.log(e)
-    // _self.emit(':ask',"Commande non reconnu");
-});
+    });
+  
 

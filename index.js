@@ -19,10 +19,10 @@ const HELP_REPROMPT = 'What can I help you with?';
 const STOP_MESSAGE = 'Goodbye!';
 const UNHANDLED_MESSAGE = "Sorry i didn't understand that";
 const ssh = new SSH({
-  host: '0.tcp.ngrok.io',
-  port: 18536,
-  user: 'h',
-  key : key_rsa
+  host: '0.tcp.ngrok.io', //param
+  port: 17122, //param
+  user: 'h', //param
+  key : key_rsa //fixe 
 });
 
 
@@ -136,10 +136,12 @@ const handlers = {
     },
   'CmdMKDIR': function () {
     let _self = this;
-    let nomRepertoire = this.event.request.intent.slots.nomRepertoire.value;
+    let repertoire = this.event.request.intent.slots.nomRepertoire.value;
+    let nomRepertoire = repertoire.replace(/ .*/,''); // par precaution, on recupere juste le premier mot de la chaine donné par l'utilisateur
    // console.log(nomRepertoire);
     let promesse = new Promise( function(resolve, reject) {
-      ssh.exec('mkdir ' + nomRepertoire, {
+      ssh.exec('mkdir', {
+        args: [nomRepertoire],
         exit : function( code, stdout, stderr ){
           if(code == 0){
             resolve("ok");
@@ -151,11 +153,36 @@ const handlers = {
     });
     promesse.then(function(value) {
       // console.log(value);
-       _self.emit(':ask', "Le répertoire a bien été créé");
+       _self.emit(':ask', "Le répertoire " + nomRepertoire + "a bien été créé");
       })
       .catch(function(e) {
         console.log(e); // erreur
         _self.emit(':ask', "Je n'arrive pas à creer le repertoire " + e);
+      });
+  },
+  'CmdCD': function () {
+    let _self = this;
+    let cheminBrut = this.event.request.intent.slots.chemin.value;
+    let chemin = cheminBrut.replace(/ .*/,''); //on recupere juste le premier ensemble de la chaine
+   // console.log(chemin);
+    let promesse = new Promise( function(resolve, reject) {
+      ssh.exec('cd ' + chemin + " && pwd", {
+        exit : function( code, stdout, stderr ){
+          if(code == 0){
+            resolve(stdout);
+          } else {
+            reject(stderr);
+          }
+        }
+      }).start()
+    });
+    promesse.then(function(value) {
+      // console.log(value);
+       _self.emit(':ask', "Vous etes maintenant dans " + chemin);
+      })
+      .catch(function(e) {
+        console.log(e); // erreur
+        _self.emit(':ask', "Je n'arrive pas à deplacer dans le chemin :  " + e);
       });
   },
   'choiceAction': function () {
@@ -166,10 +193,6 @@ const handlers = {
     }
 },
   'choiceAddMedicine': function () {
-    this.attributes.nameMedecine = this.event.request.intent.slots.nameMedecine.value
-    this.emit(':ask',"Quel est la dose de "+ this.event.request.intent.slots.nameMedecine.value + " ?")
-},
-  'CmdCD': function () {
     this.attributes.nameMedecine = this.event.request.intent.slots.nameMedecine.value
     this.emit(':ask',"Quel est la dose de "+ this.event.request.intent.slots.nameMedecine.value + " ?")
 },
