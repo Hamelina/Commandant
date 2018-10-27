@@ -20,38 +20,143 @@ const STOP_MESSAGE = 'Goodbye!';
 const UNHANDLED_MESSAGE = "Sorry i didn't understand that";
 const ssh = new SSH({
   host: '0.tcp.ngrok.io',
-  port: 14742,
+  port: 18536,
   user: 'h',
   key : key_rsa
 });
-ssh.on('error', function(err) {
-  console.log('Oops, something went wrong.');
-  console.log(err);
-  ssh.end();
-});
+
+
 const handlers = {
   'LaunchRequest': function () {
-    this.emit('CmdPWD');
-  },
+      this.emit("LancementUsuel");
+    //this.emit("PremiereFois");
+    },
+  'LancementUsuel': function () {
+      let _self = this;
+      let promesse = new Promise( function(resolve, reject) {
+        ssh.exec('pwd', {  // Commande de test
+          exit : function( code, stdout, stderr ){
+            if(code == 0){
+              resolve("ok");
+            } else {
+              reject(stderr);
+            } 
+          }
+        }).start()
+        ssh.on('error', function(err) {
+          _self.emit(':ask', "Il semble qu\'il y a un problème avec votre connexion SSH. Vérifiez vos paramètres.");
+          ssh.end();
+        });
+      });
+      promesse.then(function(value) {
+          _self.emit(':ask', "Commandant à votre écoute ! Quelle commande voulez-vous lancer ?");
+        })
+        .catch(function(e) {
+          console.log(e); // "erreur avec la commande"
+          _self.emit(':ask', "J'ai du mal à rejoindre votre dossier personnelle, verifiez vos parametres");
+        });
+     },  
+  'PremiereFois': function () {
+      let _self = this;
+      let promesse = new Promise( function(resolve, reject) {
+        ssh.exec('pwd', { 
+          exit : function( code, stdout, stderr ){
+            if(code == 0){
+              resolve("ok");
+            } else {
+              reject(stderr);
+            } 
+          }
+        }).start()
+        ssh.on('error', function(err) {
+          _self.emit(':ask', "Il semble qu\'il y a un problème avec votre connexion SSH. Vérifiez vos paramètres.");
+          ssh.end();
+        });
+      });
+      promesse.then(function(value) {
+        console.log(value);  
+          _self.emit(':ask', 'Bienvenue dans votre gestionnaire de fichiers. Il s’agit de votre première utilisation. Commandant vous permet de gérer vos dossiers, fichiers, et pour les plus aguerri: le versionning de votre code avec Github. Actuellement vous être à votre répertoire personnel. Que voulez vous faire ?');
+        })
+        .catch(function(e) {
+          console.log(e); // "erreur avec la commande"
+          _self.emit(':ask', "J'ai du mal à rejoindre votre dossier personnelle, verifiez vos parametres");
+        });
+     },  
   'CmdPWD': function () {
     let _self = this;
-    var promise1 = new Promise( function(resolve, reject) {
-      ssh.exec('pwd', {
-        out : function(stdout){
-            resolve(stdout.toString());
+    let promesse = new Promise( function(resolve, reject) {
+      ssh.exec('pwd', { 
+        exit : function( code, stdout, stderr ){
+          if(code == 0){
+            resolve(stdout);
+          } else {
+            reject(stderr);
+          } 
         }   
       }).start()
+      ssh.on('error', function(err) {
+        _self.emit(':ask', "Il semble qu\'il y a un problème avec votre connexion SSH. Vérifiez vos paramètres.");
+        ssh.end();
+      });
     });
-    promise1.then(function(value) {
-      console.log(value);
-       _self.emit(':tell',value);
+    promesse.then(function(value) {
+      console.log(value);  
+      _self.emit(':ask', "Le répertoire actuel est : " + value);
+        })
+      .catch(function(e) {
+        console.log(e); // "erreur avec la commande"
+        _self.emit(':ask', "J'ai du mal à rejoindre votre dossier personnelle, verifiez vos parametres");
+      })
+    },
+  'CmdLS': function () {
+    let _self = this;
+    let promesse = new Promise( function(resolve, reject) {
+      ssh.exec('ls | head -5', { 
+        exit : function( code, stdout, stderr ){
+          if(code == 0){
+            resolve(stdout);
+          } else {
+            reject(stderr);
+          } 
+        } 
+      }).start()
+      ssh.on('error', function(err) {
+        _self.emit(':ask', "Il semble qu\'il y a un problème avec votre connexion SSH. Vérifiez vos paramètres.");
+        ssh.end();
+      });
+    });
+    promesse.then(function(value) {
+      console.log(value);  
+       _self.emit(':ask', "Les 5 premiers éléments du répertoire sont : " + value);
+        })
+      .catch(function(e) {
+        console.log(e); // "erreur avec la commande"
+        _self.emit(':ask', "Je n'arrive pas à lister vos fichiers : " + e);
+      });
+    },
+  'CmdMKDIR': function () {
+    let _self = this;
+    let nomRepertoire = this.event.request.intent.slots.nomRepertoire.value;
+   // console.log(nomRepertoire);
+    let promesse = new Promise( function(resolve, reject) {
+      ssh.exec('mkdir ' + nomRepertoire, {
+        exit : function( code, stdout, stderr ){
+          if(code == 0){
+            resolve("ok");
+          } else {
+            reject(stderr);
+          }
+        }
+      }).start()
+    });
+    promesse.then(function(value) {
+      // console.log(value);
+       _self.emit(':ask', "Le répertoire a bien été créé");
       })
       .catch(function(e) {
-        console.log(e); // "zut !"
-      })
-      .then(function(e){
-       _self.emit(':tell',"Commande non reconnu");
-  });
+        console.log(e); // erreur
+        _self.emit(':ask', "Je n'arrive pas à creer le repertoire " + e);
+      });
   },
   'choiceAction': function () {
     if(this.event.request.intent.slots.choiceActionHealth.value ==="consulter"){
@@ -60,8 +165,11 @@ const handlers = {
       this.emit(':ask',"Qu'elle est le nom du médicament à ajouter ?")
     }
 },
-
   'choiceAddMedicine': function () {
+    this.attributes.nameMedecine = this.event.request.intent.slots.nameMedecine.value
+    this.emit(':ask',"Quel est la dose de "+ this.event.request.intent.slots.nameMedecine.value + " ?")
+},
+  'CmdCD': function () {
     this.attributes.nameMedecine = this.event.request.intent.slots.nameMedecine.value
     this.emit(':ask',"Quel est la dose de "+ this.event.request.intent.slots.nameMedecine.value + " ?")
 },
