@@ -1,4 +1,7 @@
 'use strict';
+var SSH = require('simple-ssh');
+const fs = require('fs')
+const path = require('path')
 const Alexa = require('alexa-sdk');
 const AWS = require('aws-sdk'),
 	uuid = require('uuid'),
@@ -6,19 +9,49 @@ const AWS = require('aws-sdk'),
   
   // Set the region 
 AWS.config.update({region: 'eu-west-1'});
-
+const key_rsa = fs.readFileSync(path.resolve(__dirname, './id_rsa'), 'utf8')
 const APP_ID = process.env.APP_ID;
 
-const SKILL_NAME = 'Cookyt';
+const SKILL_NAME = 'Commandant';
 const HELLO_MESSAGE = "Hello World !";
 const HELP_MESSAGE = 'You can say tell me a space fact, or, you can say exit... What can I help you with?';
 const HELP_REPROMPT = 'What can I help you with?';
 const STOP_MESSAGE = 'Goodbye!';
 const UNHANDLED_MESSAGE = "Sorry i didn't understand that";
-
+const ssh = new SSH({
+  host: '0.tcp.ngrok.io',
+  port: 14742,
+  user: 'h',
+  key : key_rsa
+});
+ssh.on('error', function(err) {
+  console.log('Oops, something went wrong.');
+  console.log(err);
+  ssh.end();
+});
 const handlers = {
   'LaunchRequest': function () {
-    this.emit(':ask','Voulez-vous ajouter un médicament ou consulter votre ordonance ?');
+    this.emit('CmdPWD');
+  },
+  'CmdPWD': function () {
+    let _self = this;
+    var promise1 = new Promise( function(resolve, reject) {
+      ssh.exec('pwd', {
+        out : function(stdout){
+            resolve(stdout.toString());
+        }   
+      }).start()
+    });
+    promise1.then(function(value) {
+      console.log(value);
+       _self.emit(':tell',value);
+      })
+      .catch(function(e) {
+        console.log(e); // "zut !"
+      })
+      .then(function(e){
+       _self.emit(':tell',"Commande non reconnu");
+  });
   },
   'choiceAction': function () {
     if(this.event.request.intent.slots.choiceActionHealth.value ==="consulter"){
