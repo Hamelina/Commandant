@@ -1,5 +1,5 @@
-# Cookyt
-Une skill Alexa qui vous accompagne à préparer vos plats
+# Commandant
+Une skill Alexa qui vous permet de gérer vos dossiers, fichiers et dépots git par commande vocale.
 
 ## Serverless Framework 
 ### Installation

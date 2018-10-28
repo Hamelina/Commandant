@@ -1,4 +1,4 @@
-service: cookyt
+service: commandant
 
 provider:
   name: aws
