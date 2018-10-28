@@ -19,19 +19,63 @@ const HELP_REPROMPT = 'Comment je peux t\'aider?';
 const STOP_MESSAGE = 'Au revoir!';
 const UNHANDLED_MESSAGE =  "Désolé je n'ai pas compris ça";
 const ERREUR_SSH = "Il semble qu\'il y a un problème avec votre connexion SSH. Vérifiez vos paramètres."
-const ssh = new SSH({
-  host: '0.tcp.ngrok.io', //param
-  port: 19968, //param
-  user: 'h', //param
-  key : key_rsa //fixe 
-});
+const sshConfig = chargerConfigSSH("amzn1.ask.account.AED72XNIICXBU5YHZBSDJO4M3BP2ORNDEDNULYRJ7RJUVA2UZV4M35REG2WFOHQPUQUY53ZLPMHZFEM3ECAMA54YG2F4SJ7REIZUEIG76QYD3ETIKGT4VOEDMAFX4CVFAXDBQ4P7T2HNLVDH4BKP3A6BDITQ7SSQV6N4D24TYP5U5LR4RRQVGH3GHGIRY5NFEDYYHO7QBQ3KDKI");
 
+const ssh = new SSH(sshConfig);
+
+function chargerConfigSSH(userId){
+  var params = {
+    Key: {
+      Id : userId
+    },
+    TableName : 'users'
+  };
+  return documentClient.get(params, function(err, data){
+    if (err){
+      console.log("Error", err, data);
+    }
+    else {
+      console.log("Success", data);
+      data.key = key_rsa;
+      return data  ;
+    }
+  })
+}
+
+function etablirConnexionSSH(userId){
+  const sshConfig = loadSSHConfig(userId)
+  return new SSH(sshConfig)
+}
+
+function majRepertoireActuel(userId,nouveauRepertoire){
+  var params = {
+    Key: {
+      Id : userId
+    },
+    ExpressionAttributeValues: {
+      ':nouveauRep' : nouveauRepertoire,
+    },
+    UpdateExpression: 'set #CurrentDir = :nouveauRep',
+    TableName : 'users'
+  };
+  return documentClient.get(params, function(err, data){
+    if (err){
+      console.log("Error", err, data);
+    }
+    else {
+      console.log("Success", data);
+      data.key = key_rsa;
+      return data  ;
+    }
+  })
+}
 
 const handlers = {
   'LaunchRequest': function () {
       this.emit("LancementUsuel");
     //this.emit("PremiereFois");
     },
+
   'LancementUsuel': function () {
       let _self = this;
       let promesse = new Promise( function(resolve, reject) {
@@ -51,6 +95,7 @@ const handlers = {
           _self.emit(':ask', "J'ai du mal à rejoindre votre dossier personnel, verifiez vos parametres");
         });
      },  
+
   'PremiereFois': function () {
       let _self = this;
       let promesse = new Promise( function(resolve, reject) {
@@ -71,6 +116,7 @@ const handlers = {
           _self.emit(':ask', "J'ai du mal à rejoindre votre dossier personnel, verifiez vos parametres");
                });
      },  
+
   'CmdPWD': function () {
     let _self = this;
     let promesse = new Promise( function(resolve, reject) {
@@ -91,6 +137,7 @@ const handlers = {
         _self.emit(':ask', "J'ai du mal à rejoindre votre dossier personnel, verifiez vos parametres");
       })
     },
+
   'CmdLS': function () {
     let _self = this;
     let promesse = new Promise( function(resolve, reject) {
@@ -113,7 +160,9 @@ const handlers = {
         console.log(e); // "erreur avec la commande"
         _self.emit(':ask', "Je n'arrive pas à lister vos fichiers.");
       });
-    },'CmdMKDIR': function () {
+    },
+    
+    'CmdMKDIR': function () {
       var nomRepertoire;
       let  intentObj = this.event.request.intent;
       let _self = this;
@@ -166,6 +215,7 @@ const handlers = {
       });
   }
 },
+
   'CmdCD': function () {
     let _self = this;
     let cheminBrut = this.event.request.intent.slots.chemin.value;
@@ -189,6 +239,7 @@ const handlers = {
         _self.emit(':ask', "Je n'arrive pas à deplacer dans le chemin ");
       });
   },
+
   'CmdRM': function () {
     let  intentObj = this.event.request.intent;
     let _self = this;
@@ -242,7 +293,8 @@ const handlers = {
         _self.emit(':ask', "Je n'arrive pas à supprimer ce fichier");
       });
   }
-},'CmdRMR': function () {
+},
+'CmdRMR': function () {
   let  intentObj = this.event.request.intent;
   let _self = this;
   var nomFichier;
@@ -250,7 +302,7 @@ const handlers = {
   if(!intentObj.slots.nomFichier.value){
     const slotToElicit = 'nomFichier'
     const speechOutput = 'Quel est le nom du repertoire à supprimer'
-    const repromptSpeech = 'Dites moi le nomdu repertoire à supprimer'
+    const repromptSpeech = 'Dites moi le nom du repertoire à supprimer'
     const updatedIntent = 'CmdRM'
     return this.emit(':elicitSlot', slotToElicit, speechOutput, repromptSpeech)
   }
@@ -294,7 +346,9 @@ const handlers = {
       _self.emit(':ask', "Je n'arrive pas à supprimer ce repertoire");
     });
  }
-},'CmdGITPULL': function () {
+},
+
+'CmdGITPULL': function () {
     let _self = this;
     let promesse = new Promise( function(resolve, reject) {
       ssh.exec('git pull --rebase', {
@@ -313,7 +367,9 @@ const handlers = {
         console.log(e); // erreur
         _self.emit(':ask', "Il semblerait qu’une erreur est apparue. Veuillez vérifier vos fichiers");
       });
-  },'CmdGITCOMMIT': function () {
+  },
+  
+  'CmdGITCOMMIT': function () {
     let _self = this;
     let message = this.event.request.intent.slots.commitMessage.value;
 
@@ -334,7 +390,9 @@ const handlers = {
         console.log(e); // erreur
         _self.emit(':ask', "Je n'arrive pas à commit");
       });
-  },'CmdGITADD': function () {
+  },
+  
+  'CmdGITADD': function () {
     let _self = this;
     let promesse = new Promise( function(resolve, reject) {
       ssh.exec('git add .'+ message, {
@@ -354,6 +412,7 @@ const handlers = {
         _self.emit(':ask', "Je n'arrive pas à ajouter vos changements");
       });
   },
+
   'choiceAction': function () {
     if(this.event.request.intent.slots.choiceActionHealth.value ==="consulter"){
       this.emit(':ask',"Donnez moi le nom du médicament à consulter ?")
@@ -361,10 +420,12 @@ const handlers = {
       this.emit(':ask',"Qu'elle est le nom du médicament à ajouter ?")
     }
 },
+
   'choiceAddMedicine': function () {
     this.attributes.nameMedecine = this.event.request.intent.slots.nameMedecine.value
     this.emit(':ask',"Quel est la dose de "+ this.event.request.intent.slots.nameMedecine.value + " ?")
 },
+
 'choiceDose': function () {
   this.attributes.doseMedecine = this.event.request.intent.slots.doseValue.value
   this.attributes.typeDoseMedecine = this.event.request.intent.slots.typeDose.value
@@ -400,18 +461,21 @@ const handlers = {
   'AddUser': function () {
     var params = {
       Item : {
-        "Id" : uuid.v1(),
-        "FirstName" : this.event.firstName,
-        "LastName" : this.event.lastName
+        "Id" : this.event.session.user.userId,
+        "Host" : this.event.host,
+        "Port" : this.event.port,
+        "UserName" : this.event.user,
+        "Key" : this.event.key
       },
       TableName : 'users'
     };
+
     documentClient.put(params, function(err, data){
       if (err)
         console.log("Error", err, data);
-    });
-
-    this.emit(':tell','Profil ajouté avec succès !')
+      else 
+        this.emit(':tell','Profil ajouté avec succès !')
+    }.bind(this));
   },
   'findUser': function () {
     var params = {
