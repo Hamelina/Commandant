@@ -13,14 +13,15 @@ const key_rsa = fs.readFileSync(path.resolve(__dirname, './id_rsa'), 'utf8')
 const APP_ID = process.env.APP_ID;
 
 const SKILL_NAME = 'Commandant';
-const HELLO_MESSAGE = "Hello World !";
+const HELLO_MESSAGE = "Salut !";
 const HELP_MESSAGE = 'You can say tell me a space fact, or, you can say exit... What can I help you with?';
-const HELP_REPROMPT = 'What can I help you with?';
-const STOP_MESSAGE = 'Goodbye!';
-const UNHANDLED_MESSAGE = "Sorry i didn't understand that";
+const HELP_REPROMPT = 'Comment je peux t\'aider?';
+const STOP_MESSAGE = 'Au revoir!';
+const UNHANDLED_MESSAGE =  "Désolé je n'ai pas compris ça";
+const ERREUR_SSH = "Il semble qu\'il y a un problème avec votre connexion SSH. Vérifiez vos paramètres."
 const ssh = new SSH({
   host: '0.tcp.ngrok.io', //param
-  port: 17122, //param
+  port: 16792, //param
   user: 'h', //param
   key : key_rsa //fixe 
 });
@@ -35,16 +36,10 @@ const handlers = {
       let _self = this;
       let promesse = new Promise( function(resolve, reject) {
         ssh.exec('pwd', {  // Commande de test
-          exit : function( code, stdout, stderr ){
-            if(code == 0){
-              resolve("ok");
-            } else {
-              reject(stderr);
-            } 
-          }
+          exit :  (code, stdout, stderr ) => code == 0 ? resolve("ok") :  reject(stderr)
         }).start()
         ssh.on('error', function(err) {
-          _self.emit(':ask', "Il semble qu\'il y a un problème avec votre connexion SSH. Vérifiez vos paramètres.");
+          _self.emit(':ask', ERREUR_SSH);
           ssh.end();
         });
       });
@@ -53,23 +48,17 @@ const handlers = {
         })
         .catch(function(e) {
           console.log(e); // "erreur avec la commande"
-          _self.emit(':ask', "J'ai du mal à rejoindre votre dossier personnelle, verifiez vos parametres");
+          _self.emit(':ask', "J'ai du mal à rejoindre votre dossier personnel, verifiez vos parametres");
         });
      },  
   'PremiereFois': function () {
       let _self = this;
       let promesse = new Promise( function(resolve, reject) {
         ssh.exec('pwd', { 
-          exit : function( code, stdout, stderr ){
-            if(code == 0){
-              resolve("ok");
-            } else {
-              reject(stderr);
-            } 
-          }
+          exit :  (code, stdout, stderr ) => code == 0 ? resolve("ok") :  reject(stderr)
         }).start()
         ssh.on('error', function(err) {
-          _self.emit(':ask', "Il semble qu\'il y a un problème avec votre connexion SSH. Vérifiez vos paramètres.");
+          _self.emit(':ask', ERREUR_SSH);
           ssh.end();
         });
       });
@@ -78,62 +67,82 @@ const handlers = {
           _self.emit(':ask', 'Bienvenue dans votre gestionnaire de fichiers. Il s’agit de votre première utilisation. Commandant vous permet de gérer vos dossiers, fichiers, et pour les plus aguerri: le versionning de votre code avec Github. Actuellement vous être à votre répertoire personnel. Que voulez vous faire ?');
         })
         .catch(function(e) {
-          console.log(e); // "erreur avec la commande"
-          _self.emit(':ask', "J'ai du mal à rejoindre votre dossier personnelle, verifiez vos parametres");
-        });
+         console.log(e); // "erreur avec la commande"
+          _self.emit(':ask', "J'ai du mal à rejoindre votre dossier personnel, verifiez vos parametres");
+               });
      },  
   'CmdPWD': function () {
     let _self = this;
     let promesse = new Promise( function(resolve, reject) {
       ssh.exec('pwd', { 
-        exit : function( code, stdout, stderr ){
-          if(code == 0){
-            resolve(stdout);
-          } else {
-            reject(stderr);
-          } 
-        }   
+        exit :  (code, stdout, stderr ) => code == 0 ? resolve(stdout) :  reject(stderr) 
       }).start()
       ssh.on('error', function(err) {
-        _self.emit(':ask', "Il semble qu\'il y a un problème avec votre connexion SSH. Vérifiez vos paramètres.");
+        _self.emit(':ask', ERREUR_SSH);
         ssh.end();
       });
     });
     promesse.then(function(value) {
       console.log(value);  
-      _self.emit(':ask', "Le répertoire actuel est : " + value);
+      _self.emit(':ask', "Je me trouve actuellement au : " + value);
         })
       .catch(function(e) {
         console.log(e); // "erreur avec la commande"
-        _self.emit(':ask', "J'ai du mal à rejoindre votre dossier personnelle, verifiez vos parametres");
+        _self.emit(':ask', "J'ai du mal à rejoindre votre dossier personnel, verifiez vos parametres");
       })
     },
   'CmdLS': function () {
     let _self = this;
     let promesse = new Promise( function(resolve, reject) {
       ssh.exec('ls | head -5', { 
-        exit : function( code, stdout, stderr ){
-          if(code == 0){
-            resolve(stdout);
-          } else {
-            reject(stderr);
-          } 
-        } 
+        exit :  (code, stdout, stderr ) => code == 0 ? resolve(stdout) :  reject(stderr)
       }).start()
       ssh.on('error', function(err) {
-        _self.emit(':ask', "Il semble qu\'il y a un problème avec votre connexion SSH. Vérifiez vos paramètres.");
+        _self.emit(':ask', ERREUR_SSH);
         ssh.end();
       });
     });
     promesse.then(function(value) {
-      console.log(value);  
-       _self.emit(':ask', "Les 5 premiers éléments du répertoire sont : " + value);
-        })
+        if(value){
+           console.log(value);  
+          _self.emit(':ask', "Les 5 premiers éléments du répertoire sont : " + value);
+        } else {
+          _self.emit(':ask', "Le repertoire est vide");
+        } })
       .catch(function(e) {
         console.log(e); // "erreur avec la commande"
-        _self.emit(':ask', "Je n'arrive pas à lister vos fichiers : " + e);
+        _self.emit(':ask', "Je n'arrive pas à lister vos fichiers.");
       });
-    },
+    },'CmdMKDIRtest': function () {
+      let  intentObj = this.event.request.intent;
+      let _self = this;
+      if(!intentObj.slots.nomRepertoire.value){
+        const slotToElicit = 'nomRepertoire'
+        const speechOutput = 'Quel est le nom du nouveau repertoire'
+        const repromptSpeech = 'Dites moi le nom du nouveau repertoire'
+        const updatedIntent = 'CmdMKDIR'
+        return this.emit(':elicitSlot', slotToElicit, speechOutput, repromptSpeech)
+      }
+       // Confirm slot: Type
+      if (intentObj.slots.nomRepertoire.confirmationStatus !== 'CONFIRMED') {
+        if (intentObj.slots.nomRepertoire.confirmationStatus !== 'DENIED') {
+          // slot status: unconfirmed
+          const slotToConfirm = 'nomRepertoire'
+          const speechOutput = 'Vous voulez creer le repertoire ' + intentObj.slots.nomRepertoire.value + ', is that right?'
+          const repromptSpeech = speechOutput
+          return this.emit(':confirmSlot', slotToConfirm, speechOutput, repromptSpeech)
+        }
+      else {
+          // slot status: denied -> reprompt for slot data
+          const slotToElicit = 'nomRepertoire'
+          const speechOutput = 'Quel est le nom du nouveau repertoire'
+          const repromptSpeech = 'Dites moi le nom du nouveau repertoire'
+          return this.emit(':elicitSlot', slotToElicit, speechOutput, repromptSpeech)
+        }
+     }
+     const msg = 'le repertoire ' + intentObj.slots.nomRepertoire.value + ' is confirmed. Drive Safe!'
+      this.emit(':tell', msg)
+  } ,
   'CmdMKDIR': function () {
     let _self = this;
     let repertoire = this.event.request.intent.slots.nomRepertoire.value;
@@ -142,14 +151,12 @@ const handlers = {
     let promesse = new Promise( function(resolve, reject) {
       ssh.exec('mkdir', {
         args: [nomRepertoire],
-        exit : function( code, stdout, stderr ){
-          if(code == 0){
-            resolve("ok");
-          } else {
-            reject(stderr);
-          }
-        }
+        exit :  (code, stdout, stderr ) => code == 0 ? resolve("ok") :  reject(stderr)
       }).start()
+      ssh.on('error', function(err) {
+        _self.emit(':ask', ERREUR_SSH);
+        ssh.end();
+      });
     });
     promesse.then(function(value) {
       // console.log(value);
@@ -157,7 +164,7 @@ const handlers = {
       })
       .catch(function(e) {
         console.log(e); // erreur
-        _self.emit(':ask', "Je n'arrive pas à creer le repertoire " + e);
+        _self.emit(':ask', "Le dossier actuel contient déjà un repertoire sous ce nom");
       });
   },
   'CmdCD': function () {
@@ -167,22 +174,103 @@ const handlers = {
    // console.log(chemin);
     let promesse = new Promise( function(resolve, reject) {
       ssh.exec('cd ' + chemin + " && pwd", {
-        exit : function( code, stdout, stderr ){
-          if(code == 0){
-            resolve(stdout);
-          } else {
-            reject(stderr);
-          }
-        }
+        exit :  (code, stdout, stderr ) => code == 0 ? resolve(stdout) :  reject(stderr)
       }).start()
+      ssh.on('error', function(err) {
+        _self.emit(':ask', ERREUR_SSH);
+        ssh.end();
+      });
     });
     promesse.then(function(value) {
       // console.log(value);
-       _self.emit(':ask', "Vous etes maintenant dans " + chemin);
+       _self.emit(':ask', "Je suis maintenant dans " + value);
       })
       .catch(function(e) {
         console.log(e); // erreur
-        _self.emit(':ask', "Je n'arrive pas à deplacer dans le chemin :  " + e);
+        _self.emit(':ask', "Je n'arrive pas à deplacer dans le chemin ");
+      });
+  },
+  'CmdRM': function () {
+    let _self = this;
+    let fichierBrut = this.event.request.intent.slots.nomFichier.value;
+    let fichier = fichierBrut.replace(/ .*/,''); //on recupere juste le premier ensemble de la chaine
+   // console.log(chemin);
+    let promesse = new Promise( function(resolve, reject) {
+      ssh.exec('rm', {
+        args:  [fichier],
+        exit :  (code, stdout, stderr ) => code == 0 ? resolve("ok") :  reject(stderr)
+      }).start()
+      ssh.on('error', function(err) {
+        _self.emit(':ask', ERREUR_SSH);
+        ssh.end();
+      });
+    });
+    promesse.then(function(value) {
+      // console.log(value);
+       _self.emit(':ask', "Le fichier " + fichier + " a été supprimé");
+      })
+      .catch(function(e) {
+        console.log(e); // erreur
+        _self.emit(':ask', "Je n'arrive pas à supprimer ce fichier");
+      });
+  },'CmdGITPULL': function () {
+    let _self = this;
+    let promesse = new Promise( function(resolve, reject) {
+      ssh.exec('git pull --rebase', {
+        exit :  (code, stdout, stderr ) => code == 0 ? resolve(stdout) :  reject(stderr)
+      }).start()
+      ssh.on('error', function(err) {
+        _self.emit(':ask', ERREUR_SSH);
+        ssh.end();
+      });
+    });
+    promesse.then(function(value) {
+      // console.log(value);
+       _self.emit(':ask', "Les changements ont bien été pris en compte, vous êtes à jour");
+      })
+      .catch(function(e) {
+        console.log(e); // erreur
+        _self.emit(':ask', "Il semblerait qu’un erreur est apparue. Veuillez vérifier vos fichiers");
+      });
+  },'CmdGITCOMMIT': function () {
+    let _self = this;
+    let message = this.event.request.intent.slots.commitMessage.value;
+
+    let promesse = new Promise( function(resolve, reject) {
+      ssh.exec('git commit -m '+ message, {
+        exit :  (code, stdout, stderr ) => code == 0 ? resolve(stdout) :  reject(stderr)
+      }).start()
+      ssh.on('error', function(err) {
+        _self.emit(':ask', ERREUR_SSH);
+        ssh.end();
+      });
+    });
+    promesse.then(function(value) {
+      // console.log(value);
+       _self.emit(':ask', "Les fichiers ont bien été commités ");
+      })
+      .catch(function(e) {
+        console.log(e); // erreur
+        _self.emit(':ask', "Je n'arrive pas à commit");
+      });
+  },'CmdGITADD': function () {
+    let _self = this;
+    let promesse = new Promise( function(resolve, reject) {
+      ssh.exec('git add .'+ message, {
+        exit :  (code, stdout, stderr ) => code == 0 ? resolve(stdout) :  reject(stderr)
+      }).start()
+      ssh.on('error', function(err) {
+        _self.emit(':ask', ERREUR_SSH);
+        ssh.end();
+      });
+    });
+    promesse.then(function(value) {
+      // console.log(value);
+       _self.emit(':ask', "Très bien. Je vais ajouter tous les changements sur tes fichiers actuels à ton git. Quel message veux tu donner à ton commit ? ");
+      })
+      .catch(function(e) {
+        console.log(e); // erreur
+        _self.emit(':ask', "Je n'arrive pas à ajouter vos changements");
       });
   },
   'choiceAction': function () {
