@@ -152,7 +152,7 @@ const handlers = {
     promesse.then(function(value) {
         if(value){
            console.log(value);  
-          _self.emit(':ask', "Les 5 premiers éléments du répertoire sont : " + value.replace(/ /g, ","));
+          _self.emit(':ask', "Les 5 premiers éléments du répertoire sont : " + value.replace(/\n/g, ","));
         } else {
           _self.emit(':ask', "Le repertoire est vide");
         } })
