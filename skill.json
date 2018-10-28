@@ -97,6 +97,135 @@
                     "samples": [
                         "{durationNumber} {durationType}"
                     ]
+                },
+                {
+                    "name": "AMAZON.PauseIntent",
+                    "samples": []
+                },
+                {
+                    "name": "AMAZON.ResumeIntent",
+                    "samples": []
+                },
+                {
+                    "name": "AMAZON.MoreIntent",
+                    "samples": []
+                },
+                {
+                    "name": "AMAZON.NavigateSettingsIntent",
+                    "samples": []
+                },
+                {
+                    "name": "AMAZON.NextIntent",
+                    "samples": []
+                },
+                {
+                    "name": "AMAZON.PageUpIntent",
+                    "samples": []
+                },
+                {
+                    "name": "AMAZON.PageDownIntent",
+                    "samples": []
+                },
+                {
+                    "name": "AMAZON.PreviousIntent",
+                    "samples": []
+                },
+                {
+                    "name": "AMAZON.ScrollRightIntent",
+                    "samples": []
+                },
+                {
+                    "name": "AMAZON.ScrollDownIntent",
+                    "samples": []
+                },
+                {
+                    "name": "AMAZON.ScrollLeftIntent",
+                    "samples": []
+                },
+                {
+                    "name": "AMAZON.ScrollUpIntent",
+                    "samples": []
+                },
+                {
+                    "name": "CmdLS",
+                    "slots": [
+                        {
+                            "name": "repertoire",
+                            "type": "repertoireSynonyme"
+                        }
+                    ],
+                    "samples": [
+                        "liste moi les elements",
+                        "l. s.",
+                        "liste moi les fichiers",
+                        "Dis moi les fichiers du {repertoire} actuel",
+                        "Liste les fichiers"
+                    ]
+                },
+                {
+                    "name": "CmdPWD",
+                    "slots": [
+                        {
+                            "name": "repertoire",
+                            "type": "repertoireSynonyme"
+                        }
+                    ],
+                    "samples": [
+                        "ou suis je",
+                        "p. w. d.",
+                        "dans quel {repertoire} es tu",
+                        "quel est le {repertoire} actuel"
+                    ]
+                },
+                {
+                    "name": "CmdMKDIR",
+                    "slots": [
+                        {
+                            "name": "nomRepertoire",
+                            "type": "AMAZON.SearchQuery"
+                        }
+                    ],
+                    "samples": [
+                        "mkdir {nomRepertoire}",
+                        "creer un dossier {nomRepertoire}"
+                    ]
+                },
+                {
+                    "name": "CmdCD",
+                    "slots": [
+                        {
+                            "name": "chemin",
+                            "type": "AMAZON.SearchQuery"
+                        }
+                    ],
+                    "samples": [
+                        "deplace toi dans {chemin}",
+                        "c d {chemin}"
+                    ]
+                },
+                {
+                    "name": "CmdMKDIRtest",
+                    "slots": [
+                        {
+                            "name": "nomRepertoire",
+                            "type": "AMAZON.SearchQuery"
+                        }
+                    ],
+                    "samples": [
+                        "test la creation du repertoire {nomRepertoire}"
+                    ]
+                },
+                {
+                    "name": "CmdRM",
+                    "slots": [
+                        {
+                            "name": "nomFichier",
+                            "type": "AMAZON.SearchQuery"
+                        }
+                    ],
+                    "samples": [
+                        "supprime le fichier {nomFichier}"
+                    ]
                 }
             ],
             "types": [
@@ -269,8 +398,54 @@
                             }
                         }
                     ]
+                },
+                {
+                    "name": "repertoireSynonyme",
+                    "values": [
+                        {
+                            "name": {
+                                "value": "repertoire",
+                                "synonyms": [
+                                    "dossier"
+                                ]
+                            }
+                        }
+                    ]
                 }
             ]
-        }
+        },
+        "dialog": {
+            "intents": [
+                {
+                    "name": "CmdMKDIR",
+                    "confirmationRequired": true,
+                    "prompts": {
+                        "confirmation": "Confirm.Intent.1315500605458"
+                    },
+                    "slots": [
+                        {
+                            "name": "nomRepertoire",
+                            "type": "AMAZON.SearchQuery",
+                            "confirmationRequired": true,
+                            "elicitationRequired": false,
+                            "prompts": {
+                                "confirmation": "Confirm.Intent.1315500605458"
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        "prompts": [
+            {
+                "id": "Confirm.Intent.1315500605458",
+                "variations": [
+                    {
+                        "type": "PlainText",
+                        "value": "Voulez vous vraiment créer le repertoire au nom de {nomRepertoire} ?"
+                    }
+                ]
+            }
+        ]
     }
 }

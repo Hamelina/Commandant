@@ -21,7 +21,7 @@ const UNHANDLED_MESSAGE =  "Désolé je n'ai pas compris ça";
 const ERREUR_SSH = "Il semble qu\'il y a un problème avec votre connexion SSH. Vérifiez vos paramètres."
 const ssh = new SSH({
   host: '0.tcp.ngrok.io', //param
-  port: 16792, //param
+  port: 19968, //param
   user: 'h', //param
   key : key_rsa //fixe 
 });
@@ -105,7 +105,7 @@ const handlers = {
     promesse.then(function(value) {
         if(value){
            console.log(value);  
-          _self.emit(':ask', "Les 5 premiers éléments du répertoire sont : " + value);
+          _self.emit(':ask', "Les 5 premiers éléments du répertoire sont : " + value.replace(/ /g, ","));
         } else {
           _self.emit(':ask', "Le repertoire est vide");
         } })
@@ -113,7 +113,8 @@ const handlers = {
         console.log(e); // "erreur avec la commande"
         _self.emit(':ask', "Je n'arrive pas à lister vos fichiers.");
       });
-    },'CmdMKDIRtest': function () {
+    },'CmdMKDIR': function () {
+      var nomRepertoire;
       let  intentObj = this.event.request.intent;
       let _self = this;
       if(!intentObj.slots.nomRepertoire.value){
@@ -128,27 +129,24 @@ const handlers = {
         if (intentObj.slots.nomRepertoire.confirmationStatus !== 'DENIED') {
           // slot status: unconfirmed
           const slotToConfirm = 'nomRepertoire'
-          const speechOutput = 'Vous voulez creer le repertoire ' + intentObj.slots.nomRepertoire.value + ', is that right?'
+          let intentValue = intentObj.slots.nomRepertoire.value;
+          nomRepertoire = intentValue.replace(/ .*/,'');     // par precaution, on recupere juste le premier mot de la chaine donné par l'utilisateur
+          const speechOutput = 'Vous voulez créer le repertoire au nom de ' + nomRepertoire + ', est-ce exact?'
           const repromptSpeech = speechOutput
           return this.emit(':confirmSlot', slotToConfirm, speechOutput, repromptSpeech)
         }
       else {
-          // slot status: denied -> reprompt for slot data
-          const slotToElicit = 'nomRepertoire'
-          const speechOutput = 'Quel est le nom du nouveau repertoire'
-          const repromptSpeech = 'Dites moi le nom du nouveau repertoire'
-          return this.emit(':elicitSlot', slotToElicit, speechOutput, repromptSpeech)
+        const slotToElicit = 'nomRepertoire'
+        const speechOutput = 'Quel est le nom du nouveau repertoire'
+        const repromptSpeech = 'Dites moi le nom du nouveau repertoire'
+        const updatedIntent = 'CmdMKDIR'
+        return this.emit(':elicitSlot', slotToElicit, speechOutput, repromptSpeech)
         }
-     }
-     const msg = 'le repertoire ' + intentObj.slots.nomRepertoire.value + ' is confirmed. Drive Safe!'
-      this.emit(':tell', msg)
-  } ,
-  'CmdMKDIR': function () {
-    let _self = this;
-    let repertoire = this.event.request.intent.slots.nomRepertoire.value;
-    let nomRepertoire = repertoire.replace(/ .*/,''); // par precaution, on recupere juste le premier mot de la chaine donné par l'utilisateur
-   // console.log(nomRepertoire);
-    let promesse = new Promise( function(resolve, reject) {
+     } 
+     let intentValue = intentObj.slots.nomRepertoire.value;
+     nomRepertoire = intentValue.replace(/ .*/,''); 
+     if(nomRepertoire){
+      let promesse = new Promise( function(resolve, reject) {
       ssh.exec('mkdir', {
         args: [nomRepertoire],
         exit :  (code, stdout, stderr ) => code == 0 ? resolve("ok") :  reject(stderr)
@@ -166,7 +164,8 @@ const handlers = {
         console.log(e); // erreur
         _self.emit(':ask', "Le dossier actuel contient déjà un repertoire sous ce nom");
       });
-  },
+  }
+},
   'CmdCD': function () {
     let _self = this;
     let cheminBrut = this.event.request.intent.slots.chemin.value;
@@ -191,13 +190,42 @@ const handlers = {
       });
   },
   'CmdRM': function () {
+    let  intentObj = this.event.request.intent;
     let _self = this;
-    let fichierBrut = this.event.request.intent.slots.nomFichier.value;
-    let fichier = fichierBrut.replace(/ .*/,''); //on recupere juste le premier ensemble de la chaine
-   // console.log(chemin);
+    var nomFichier;
+    var intentValue;
+    if(!intentObj.slots.nomFichier.value){
+      const slotToElicit = 'nomFichier'
+      const speechOutput = 'Quel est le nom du fichier à supprimer'
+      const repromptSpeech = 'Dites moi le nomdu fichier à supprimer'
+      const updatedIntent = 'CmdRM'
+      return this.emit(':elicitSlot', slotToElicit, speechOutput, repromptSpeech)
+    }
+     // Confirm slot: Type
+    if (intentObj.slots.nomFichier.confirmationStatus !== 'CONFIRMED') {
+      if (intentObj.slots.nomFichier.confirmationStatus !== 'DENIED') {
+        // slot status: unconfirmed
+        const slotToConfirm = 'nomFichier'
+        intentValue = intentObj.slots.nomFichier.value;
+        nomFichier = intentValue.replace(/ .*/,'');     // par precaution, on recupere juste le premier mot de la chaine donné par l'utilisateur
+        const speechOutput = 'Vous voulez supprimer le fichier au nom de ' + nomFichier + ', est-ce exact?'
+        const repromptSpeech = speechOutput
+        return this.emit(':confirmSlot', slotToConfirm, speechOutput, repromptSpeech)
+      }
+    else {
+      const slotToElicit = 'nomFichier'
+      const speechOutput = 'Quel est le nom du fichier à supprimer'
+      const repromptSpeech = 'Dites moi le nomdu fichier à supprimer'
+      const updatedIntent = 'CmdMKDIR'
+      return this.emit(':elicitSlot', slotToElicit, speechOutput, repromptSpeech)
+      }
+   } 
+   intentValue = intentObj.slots.nomFichier.value;
+   nomFichier = intentValue.replace(/ .*/,'');  //on recupere juste le premier ensemble de la chaine
+   if(nomFichier){
     let promesse = new Promise( function(resolve, reject) {
       ssh.exec('rm', {
-        args:  [fichier],
+        args:  [nomFichier],
         exit :  (code, stdout, stderr ) => code == 0 ? resolve("ok") :  reject(stderr)
       }).start()
       ssh.on('error', function(err) {
@@ -207,13 +235,66 @@ const handlers = {
     });
     promesse.then(function(value) {
       // console.log(value);
-       _self.emit(':ask', "Le fichier " + fichier + " a été supprimé");
+       _self.emit(':ask', "Le fichier " + nomFichier + " a été supprimé");
       })
       .catch(function(e) {
         console.log(e); // erreur
         _self.emit(':ask', "Je n'arrive pas à supprimer ce fichier");
       });
-  },'CmdGITPULL': function () {
+  }
+},'CmdRMR': function () {
+  let  intentObj = this.event.request.intent;
+  let _self = this;
+  var nomFichier;
+  var intentValue;
+  if(!intentObj.slots.nomFichier.value){
+    const slotToElicit = 'nomFichier'
+    const speechOutput = 'Quel est le nom du repertoire à supprimer'
+    const repromptSpeech = 'Dites moi le nomdu repertoire à supprimer'
+    const updatedIntent = 'CmdRM'
+    return this.emit(':elicitSlot', slotToElicit, speechOutput, repromptSpeech)
+  }
+   // Confirm slot: Type
+  if (intentObj.slots.nomFichier.confirmationStatus !== 'CONFIRMED') {
+    if (intentObj.slots.nomFichier.confirmationStatus !== 'DENIED') {
+      // slot status: unconfirmed
+      const slotToConfirm = 'nomFichier'
+      intentValue = intentObj.slots.nomFichier.value;
+      nomFichier = intentValue.replace(/ .*/,'');     // par precaution, on recupere juste le premier mot de la chaine donné par l'utilisateur
+      const speechOutput = 'Vous voulez supprimer le repertoire au nom de ' + nomFichier + ', est-ce exact?'
+      const repromptSpeech = speechOutput
+      return this.emit(':confirmSlot', slotToConfirm, speechOutput, repromptSpeech)
+    }
+  else {
+    const slotToElicit = 'nomFichier'
+    const speechOutput = 'Quel est le nom du repertoire à supprimer'
+    const repromptSpeech = 'Dites moi le nom du repertoire à supprimer'
+    return this.emit(':elicitSlot', slotToElicit, speechOutput, repromptSpeech)
+    }
+ } 
+ intentValue = intentObj.slots.nomFichier.value;
+ nomFichier = intentValue.replace(/ .*/,'');  //on recupere juste le premier ensemble de la chaine
+ if(nomFichier){
+  let promesse = new Promise( function(resolve, reject) {
+    ssh.exec('rm -R', {
+      args:  [nomFichier],
+      exit :  (code, stdout, stderr ) => code == 0 ? resolve("ok") :  reject(stderr)
+    }).start()
+    ssh.on('error', function(err) {
+      _self.emit(':ask', ERREUR_SSH);
+      ssh.end();
+    });
+  });
+  promesse.then(function(value) {
+    // console.log(value);
+     _self.emit(':ask', "Le repertoire " + nomFichier + " a été supprimé");
+    })
+    .catch(function(e) {
+      console.log(e); // erreur
+      _self.emit(':ask', "Je n'arrive pas à supprimer ce repertoire");
+    });
+ }
+},'CmdGITPULL': function () {
     let _self = this;
     let promesse = new Promise( function(resolve, reject) {
       ssh.exec('git pull --rebase', {
@@ -230,7 +311,7 @@ const handlers = {
       })
       .catch(function(e) {
         console.log(e); // erreur
-        _self.emit(':ask', "Il semblerait qu’un erreur est apparue. Veuillez vérifier vos fichiers");
+        _self.emit(':ask', "Il semblerait qu’une erreur est apparue. Veuillez vérifier vos fichiers");
       });
   },'CmdGITCOMMIT': function () {
     let _self = this;
@@ -266,7 +347,7 @@ const handlers = {
     });
     promesse.then(function(value) {
       // console.log(value);
-       _self.emit(':ask', "Très bien. Je vais ajouter tous les changements sur tes fichiers actuels à ton git. Quel message veux tu donner à ton commit ? ");
+       _self.emit(':ask', "Très bien. Je vais ajouter tous les changements sur les fichiers actuels à votre git. Quel message voulez-vous donner à votre commit ? ");
       })
       .catch(function(e) {
         console.log(e); // erreur
