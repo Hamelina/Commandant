@@ -21,7 +21,7 @@ const UNHANDLED_MESSAGE =  "Désolé je n'ai pas compris ça";
 const ERREUR_SSH = "Il semble qu\'il y a un problème avec votre connexion SSH. Vérifiez vos paramètres."
 const ssh = new SSH({
   host: '0.tcp.ngrok.io', //param
-  port: 19968, //param
+  port: 18674, //param
   user: 'h', //param
   key : key_rsa //fixe 
 });
@@ -105,7 +105,7 @@ const handlers = {
     promesse.then(function(value) {
         if(value){
            console.log(value);  
-          _self.emit(':ask', "Les 5 premiers éléments du répertoire sont : " + value.replace(/ /g, ","));
+          _self.emit(':ask', "Les 5 premiers éléments du répertoire sont : " + value.replace(/\n/g, ","));
         } else {
           _self.emit(':ask', "Le repertoire est vide");
         } })
