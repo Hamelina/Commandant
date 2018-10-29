@@ -201,8 +201,7 @@
                     "name": "CmdGITPUSH",
                     "samples": [
                         "git push",
-                        "push",
-                        "push moi",
+                        "push",                       
                         "envoie sur git",
                         "envoie le commit",
                         "push le commit"
