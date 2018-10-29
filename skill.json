@@ -20,85 +20,6 @@
                     "samples": []
                 },
                 {
-                    "name": "choiceAddMedicine",
-                    "slots": [
-                        {
-                            "name": "nameMedecine",
-                            "type": "AMAZON.Movie"
-                        }
-                    ],
-                    "samples": [
-                        "Ajoute moi {nameMedecine}"
-                    ]
-                },
-                {
-                    "name": "choiceAction",
-                    "slots": [
-                        {
-                            "name": "choiceActionHealth",
-                            "type": "choiceActionBegin"
-                        }
-                    ],
-                    "samples": [
-                        "{choiceActionHealth}"
-                    ]
-                },
-                {
-                    "name": "choiceDose",
-                    "slots": [
-                        {
-                            "name": "doseValue",
-                            "type": "AMAZON.NUMBER"
-                        },
-                        {
-                            "name": "typeDose",
-                            "type": "nameTypeDose"
-                        }
-                    ],
-                    "samples": [
-                        "{doseValue} {typeDose}"
-                    ]
-                },
-                {
-                    "name": "giveHours",
-                    "slots": [
-                        {
-                            "name": "hour",
-                            "type": "AMAZON.TIME"
-                        }
-                    ],
-                    "samples": [
-                        "a {hour}",
-                        "à {hour}"
-                    ]
-                },
-                {
-                    "name": "repeatHour",
-                    "slots": [
-                        {
-                            "name": "responseRepeat",
-                            "type": "typeBinary"
-                        }
-                    ],
-                    "samples": []
-                },
-                {
-                    "name": "durationMedecine",
-                    "slots": [
-                        {
-                            "name": "durationNumber",
-                            "type": "AMAZON.NUMBER"
-                        },
-                        {
-                            "name": "durationType",
-                            "type": "typeDuration"
-                        }
-                    ],
-                    "samples": [
-                        "{durationNumber} {durationType}"
-                    ]
-                },
-                {
                     "name": "AMAZON.PauseIntent",
                     "samples": []
                 },
@@ -155,9 +76,9 @@
                         }
                     ],
                     "samples": [
-                        "liste moi les elements",
+                        "Liste moi les elements",
                         "l. s.",
-                        "liste moi les fichiers",
+                        "Liste moi les fichiers",
                         "Dis moi les fichiers du {repertoire} actuel",
                         "Liste les fichiers"
                     ]
@@ -174,7 +95,7 @@
                         "ou suis je",
                         "p. w. d.",
                         "dans quel {repertoire} es tu",
-                        "quel est le {repertoire} actuel"
+                        "quel est le {repertoire} actuel"                       
                     ]
                 },
                 {
@@ -187,7 +108,9 @@
                     ],
                     "samples": [
                         "mkdir {nomRepertoire}",
-                        "creer un dossier {nomRepertoire}"
+                        "creer un dossier {nomRepertoire}",
+                        "cree un dossier {nomRepertoire}",
+                        "fais un dossier {nomRepertoire}"
                     ]
                 },
                 {
@@ -230,49 +153,6 @@
             ],
             "types": [
                 {
-                    "name": "medicine",
-                    "values": [
-                        {
-                            "name": {
-                                "value": "antiseptique"
-                            }
-                        },
-                        {
-                            "name": {
-                                "value": "anesthésique"
-                            }
-                        },
-                        {
-                            "name": {
-                                "value": "sédatif"
-                            }
-                        },
-                        {
-                            "name": {
-                                "value": "remède"
-                            }
-                        },
-                        {
-                            "name": {
-                                "value": "crème"
-                            }
-                        },
-                        {
-                            "name": {
-                                "value": "traitement"
-                            }
-                        },
-                        {
-                            "name": {
-                                "value": "médicament",
-                                "synonyms": [
-                                    "Médication"
-                                ]
-                            }
-                        }
-                    ]
-                },
-                {
                     "name": "choiceActionBegin",
                     "values": [
                         {
@@ -288,83 +168,6 @@
                     ]
                 },
                 {
-                    "name": "nameTypeDose",
-                    "values": [
-                        {
-                            "name": {
-                                "value": "suppositoires",
-                                "synonyms": [
-                                    "suppositoire"
-                                ]
-                            }
-                        },
-                        {
-                            "name": {
-                                "value": "sachets",
-                                "synonyms": [
-                                    "sachet"
-                                ]
-                            }
-                        },
-                        {
-                            "name": {
-                                "value": "grammes",
-                                "synonyms": [
-                                    "gramme"
-                                ]
-                            }
-                        },
-                        {
-                            "name": {
-                                "value": "milligrammes",
-                                "synonyms": [
-                                    "milligramme"
-                                ]
-                            }
-                        },
-                        {
-                            "name": {
-                                "value": "comprimés",
-                                "synonyms": [
-                                    "comprimé"
-                                ]
-                            }
-                        },
-                        {
-                            "name": {
-                                "value": "gellules",
-                                "synonyms": [
-                                    "gellule"
-                                ]
-                            }
-                        },
-                        {
-                            "name": {
-                                "value": "pillules",
-                                "synonyms": [
-                                    "pillule"
-                                ]
-                            }
-                        },
-                        {
-                            "name": {
-                                "value": "cuillères à café",
-                                "synonyms": [
-                                    "cuillère à café"
-                                ]
-                            }
-                        },
-                        {
-                            "name": {
-                                "value": "cuillères à soupe",
-                                "synonyms": [
-                                    "cuillère à soupe"
-                                ]
-                            }
-                        }
-                    ]
-                },
-                {
                     "name": "typeBinary",
                     "values": [
                         {
@@ -375,26 +178,6 @@
                         {
                             "name": {
                                 "value": "oui"
-                            }
-                        }
-                    ]
-                },
-                {
-                    "name": "typeDuration",
-                    "values": [
-                        {
-                            "name": {
-                                "value": "jour"
-                            }
-                        },
-                        {
-                            "name": {
-                                "value": "mois"
-                            }
-                        },
-                        {
-                            "name": {
-                                "value": "semaine"
                             }
                         }
                     ]
