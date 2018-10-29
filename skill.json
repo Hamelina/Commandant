@@ -84,6 +84,58 @@
                     ]
                 },
                 {
+                    "name": "Config",
+                    "samples": [
+                        "Je veux configurer le commandant",
+                        "configurer",
+                        "configuration",
+                        "configure ma connexion"                       
+                    ]
+                },
+                {
+                    "name": "ConfigHost",
+                    "slots": [
+                        {
+                            "name": "host",
+                            "type": "AMAZON.SearchQuery"
+                        }
+                    ],
+                    "samples": [
+                        "mon domaine c'est {host}",
+                        "Mon domaine est {host} "                     
+                    ]
+                },
+                {
+                    "name": "ConfigUsername",
+                    "slots": [
+                        {
+                            "name": "nomUtilisateur",
+                            "type": "AMAZON.SearchQuery"
+                        }
+                    ],
+                    "samples": [
+                        "mon nom est {nomUtilisateur}",
+                        "Mon nom c'est {nomUtilisateur}",
+                        "Mon nom d'utilisateur est {nomUtilisateur}"
+
+                    ]
+                },
+                {
+                    "name": "ConfigPort",
+                    "slots": [
+                        {
+                            "name": "port",
+                            "type": "AMAZON.SearchQuery"
+                        }
+                    ],
+                    "samples": [
+                        "mon port est {port}",
+                        "Mon port c'est {port}",
+                        "Mon numero de port est {port}"
+
+                    ]
+                },
+                {
                     "name": "CmdPWD",
                     "slots": [
                         {
