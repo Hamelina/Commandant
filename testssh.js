@@ -14,7 +14,7 @@ var ssh = new SSH({
  console.log(ssh.port);
 ssh.port = 22;
   var promise1 = new Promise( function(resolve, reject) {
-    ssh.exec('ls | head -5' , {
+    ssh.exec('pwd' , {
       exit :  (code, stdout, stderr ) => code == 0 ? resolve(stdout) :  reject(stderr)
     }).start()
     ssh.on('error', function(err) {
@@ -24,7 +24,7 @@ ssh.port = 22;
       });
   });
   promise1.then(function(value) {
-    console.log("Vous etes bien deplacer " + value.replace(/\n/g, ","));
+    console.log("Vous etes bien deplacer " + value.replace(/\/.*/,''));
  //    _self.emit(':ask',value);
     })
     .catch(function(error) {
