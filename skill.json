@@ -196,6 +196,22 @@
                         "ajoute moi {fichierAjoute}",
                         "add {fichierAjoute}"
                     ]
+                },
+                {
+                    "name": "CmdGITPUSH",
+                    "slots": [
+                        {
+                            "name": "commitPush",
+                            "type": "AMAZON.SearchQuery"
+                        }
+                    ],
+                    "samples": [
+                        "git push {commitPush}",
+                        "push {commitPush}",
+                        "push moi {commitPush}",
+                        "envoie sur git {commitPush}",
+                        "envoie {commitPush}"
+                    ]
                 }
             ],
             "types": [
