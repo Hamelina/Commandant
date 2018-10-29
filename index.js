@@ -13,9 +13,8 @@ const key_rsa = fs.readFileSync(path.resolve(__dirname, './id_rsa'), 'utf8')
 const APP_ID = process.env.APP_ID;
 
 const SKILL_NAME = 'Commandant';
-const HELLO_MESSAGE = "Salut !";
-const HELP_MESSAGE = 'You can say tell me a space fact, or, you can say exit... What can I help you with?';
-const HELP_REPROMPT = 'Comment je peux t\'aider?';
+const HELP_MESSAGE = 'Vous pouvez me donner un ordre or dire quitter pour arreter l\'execution... Que puis-je faire pour vous?';
+const HELP_REPROMPT = 'Comment puis-je vous aider?';
 const STOP_MESSAGE = 'Au revoir!';
 const UNHANDLED_MESSAGE =  "Désolé je n'ai pas compris ça";
 const ERREUR_SSH = "Il semble qu\'il y a un problème avec votre connexion SSH. Vérifiez vos paramètres."
@@ -109,7 +108,7 @@ const handlers = {
       });
       promesse.then(function(value) {
         console.log(value);  
-          _self.emit(':ask', 'Bienvenue dans votre gestionnaire de fichiers. Il s’agit de votre première utilisation. Commandant vous permet de gérer vos dossiers, fichiers, et pour les plus aguerri: le versionning de votre code avec Github. Actuellement vous être à votre répertoire personnel. Que voulez vous faire ?');
+          _self.emit(':ask', 'Bienvenue dans votre gestionnaire de fichiers. Il s’agit de votre première utilisation. Commandant vous permet de gérer vos dossiers, fichiers, et pour les plus aguerri: le versionning de votre code avec Github. Actuellement vous êtes à votre répertoire personnel. Que voulez vous faire ?');
         })
         .catch(function(e) {
          console.log(e); // "erreur avec la commande"
@@ -236,7 +235,7 @@ const handlers = {
       })
       .catch(function(e) {
         console.log(e); // erreur
-        _self.emit(':ask', "Je n'arrive pas à deplacer dans le chemin ");
+        _self.emit(':ask', "Je n'arrive pas à me deplacer dans le chemin ");
       });
   },
 
@@ -248,7 +247,7 @@ const handlers = {
     if(!intentObj.slots.nomFichier.value){
       const slotToElicit = 'nomFichier'
       const speechOutput = 'Quel est le nom du fichier à supprimer'
-      const repromptSpeech = 'Dites moi le nomdu fichier à supprimer'
+      const repromptSpeech = 'Dites moi le nom du fichier à supprimer'
       const updatedIntent = 'CmdRM'
       return this.emit(':elicitSlot', slotToElicit, speechOutput, repromptSpeech)
     }
@@ -266,7 +265,7 @@ const handlers = {
     else {
       const slotToElicit = 'nomFichier'
       const speechOutput = 'Quel est le nom du fichier à supprimer'
-      const repromptSpeech = 'Dites moi le nomdu fichier à supprimer'
+      const repromptSpeech = 'Dites moi le nom du fichier à supprimer'
       const updatedIntent = 'CmdMKDIR'
       return this.emit(':elicitSlot', slotToElicit, speechOutput, repromptSpeech)
       }
@@ -384,7 +383,7 @@ const handlers = {
     });
     promesse.then(function(value) {
       // console.log(value);
-       _self.emit(':ask', "Les fichiers ont bien été commités ");
+       _self.emit(':ask', "Les fichiers ont bien été commit ");
       })
       .catch(function(e) {
         console.log(e); // erreur
@@ -412,51 +411,6 @@ const handlers = {
         _self.emit(':ask', "Je n'arrive pas à ajouter vos changements");
       });
   },
-
-  'choiceAction': function () {
-    if(this.event.request.intent.slots.choiceActionHealth.value ==="consulter"){
-      this.emit(':ask',"Donnez moi le nom du médicament à consulter ?")
-    }else if(this.event.request.intent.slots.choiceActionHealth.value ==="ajouter"){
-      this.emit(':ask',"Qu'elle est le nom du médicament à ajouter ?")
-    }
-},
-
-  'choiceAddMedicine': function () {
-    this.attributes.nameMedecine = this.event.request.intent.slots.nameMedecine.value
-    this.emit(':ask',"Quel est la dose de "+ this.event.request.intent.slots.nameMedecine.value + " ?")
-},
-
-'choiceDose': function () {
-  this.attributes.doseMedecine = this.event.request.intent.slots.doseValue.value
-  this.attributes.typeDoseMedecine = this.event.request.intent.slots.typeDose.value
-  this.emit(':ask',"Quelle est la durée du traitement ?")
-},
-'durationMedecine': function () {
-  this.attributes.numberDurationMedecine = this.event.request.intent.slots.durationNumber.value
-  this.attributes.typeDurationMedecine = this.event.request.intent.slots.durationType.value
-  this.emit(':ask',"Nous allons lister les heures de prises quotidiennes, donnez moi la première heure de prise de la journée")
-},
-'giveHours': function () {
-  if(this.attributes.hoursMedicine){
-    this.attributes.hoursMedicine.push(this.event.request.intent.slots.hour.value)
-  }else{
-    this.attributes.hoursMedicine = [this.event.request.intent.slots.hour.value]
-  }
-  this.emit(':ask',"L'heure a été ajouté, avez-vous d'autres heures, répondez oui ou non")
-},
-'reapeatHour': function () {
-  if(this.event.request.intent.slots.responseRepeat.value === "oui"){
-    this.emit(':ask',"Donner une nouvelle heure")
-  }else if(this.event.request.intent.slots.responseRepeat.value === "non"){
-    /*this.emit(':ask',"L'ajout du médicament est terminé. Voici un récapitulatif, nom du médicament : " + this.attributes.nameMedecine + 
-    " dose : " + this.attributes.doseMedecine + this.attributes.typeDoseMedecine+
-    " durée : pendant" + this.attributes.numberDurationMedecine + this.attributes.typeDurationMedecine+
-    " pour les heures : "+ this.attributes.hoursMedicine.join(","))*/
-    this.emit(':ask',"La saisie est terminée")
-  }
-  
-},
-
 
   'AddUser': function () {
     var params = {
@@ -495,60 +449,7 @@ const handlers = {
       }
     });
   },
-  /*'AddMedicine': function () {
-    var params = {
-      Item : {
-        "Id" : uuid.v1(),
-        "MedecineName" : this.event.name,
-        "Quantity": 0
-      },
-      TableName : 'medicines'
-    };
-    documentClient.put(params, function(err, data){
-      if (err)
-        console.log("Error", err, data);
-    });
-  },*/
-    'responseAddMedicine': function () {
-      this.emit(':ask',"Quel est le nom du médicament ?")
-  },
-  'findMedicineByName': function () {
-    var params = {
-      ExpressionAttributeValues: {
-        ':name' : {S: this.event.name}
-      },
-      FilterExpression: 'contains (MedicineName, :name)',
-      TableName : 'medecines'
-    };
-    documentClient.scan(params, function(err, data){
-      if (err){
-        console.log("Error", err, data);
-      }
-      else {
-        console.log("Success", data);
-        //this.emit(':tell',data)    
-      }
-    });
-    //this.emit(':tell','Medicament ajoutée avec succès !')
-  },
-  'deleteMedicineByName': function () {
-    var params = {
-      TableName: 'medecines',
-      ExpressionAttributeValues: {
-        ':name' : {S: this.event.name}
-      }
-    };
-    documentClient.deleteItem(params, function(err, data){
-      if (err){
-        console.log("Error", err, data);
-      }
-      else {
-        console.log("Success", data);
-        //this.emit(':tell',data)    
-      }
-    });
-    //this.emit(':tell','Medicament ajoutée avec succès !')
-  },
+  
   'AMAZON.HelpIntent': function () {
     const speechOutput = HELP_MESSAGE;
     const reprompt = HELP_REPROMPT;
