@@ -149,6 +149,53 @@
                     "samples": [
                         "supprime le fichier {nomFichier}"
                     ]
+                },
+                {
+                    "name": "CmdGITPULL",
+                    "slots": [
+                        {
+                            "name": "repertoireCourant",
+                            "type": "AMAZON.SearchQuery"
+                        }
+                    ],
+                    "samples": [
+                        "git pull {repertoireCourant}",
+                        "pull {repertoireCourant}",
+                        "met à jour {repertoireCourant}",
+                        "prend la derniere version de {repertoireCourant}"
+                    ]
+                },
+                {
+                    "name": "CmdGITCOMMIT",
+                    "slots": [
+                        {
+                            "name": "messageCommit",
+                            "type": "AMAZON.SearchQuery"
+                        }
+                    ],
+                    "samples": [
+                        "git commit {messageCommit}",
+                        "commit {messageCommit}",
+                        "commit moi {messageCommit}",
+                        "commit avec le message suivant {messageCommit}",
+                        "commit le message {messageCommit}"
+                    ]
+                },
+                {
+                    "name": "CmdGITADD",
+                    "slots": [
+                        {
+                            "name": "fichierAjoute",
+                            "type": "AMAZON.SearchQuery"
+                        }
+                    ],
+                    "samples": [
+                        "git add {fichierAjoute}",
+                        "ajoute le fichier {fichierAjoute}",
+                        "ajoute {fichierAjoute}",
+                        "ajoute moi {fichierAjoute}",
+                        "add {fichierAjoute}"
+                    ]
                 }
             ],
             "types": [
