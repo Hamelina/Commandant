@@ -3,12 +3,14 @@ var SSH = require('simple-ssh');
 const fs = require('fs')
 const path = require('path')
 const Alexa = require('alexa-sdk');
+
 const AWS = require('aws-sdk'),
-	uuid = require('uuid'),
-  documentClient = new AWS.DynamoDB.DocumentClient(); 
+  uuid = require('uuid');
+  var documentClient = new AWS.DynamoDB.DocumentClient(); 
   
   // Set the region 
-AWS.config.update({region: 'eu-west-1'});
+  AWS.config.update({region: 'eu-west-1'});
+
 const key_rsa = fs.readFileSync(path.resolve(__dirname, './id_rsa'), 'utf8')
 const APP_ID = process.env.APP_ID;
 
@@ -18,70 +20,185 @@ const HELP_REPROMPT = 'Comment puis-je vous aider?';
 const STOP_MESSAGE = 'Au revoir!';
 const UNHANDLED_MESSAGE =  "Désolé je n'ai pas compris ça";
 const ERREUR_SSH = "Il semble qu\'il y a un problème avec votre connexion SSH. Vérifiez vos paramètres."
-const sshConfig = chargerConfigSSH("amzn1.ask.account.AED72XNIICXBU5YHZBSDJO4M3BP2ORNDEDNULYRJ7RJUVA2UZV4M35REG2WFOHQPUQUY53ZLPMHZFEM3ECAMA54YG2F4SJ7REIZUEIG76QYD3ETIKGT4VOEDMAFX4CVFAXDBQ4P7T2HNLVDH4BKP3A6BDITQ7SSQV6N4D24TYP5U5LR4RRQVGH3GHGIRY5NFEDYYHO7QBQ3KDKI");
+//const sshConfig = chargerConfigSSH("23");
 
-const ssh = new SSH(sshConfig);
+var ssh = new SSH({
+  'host': 'localhost', //param
+  'port':  19686, //param
+  'user': 'camille', //param
+  'key': key_rsa //fixe 
+});
 
-function chargerConfigSSH(userId){
+var repertoireCourant = "./";
+function chargerConfigSSH(userId, callback){
   var params = {
     Key: {
-      Id : userId
+      "ID": userId
     },
     TableName : 'users'
   };
   return documentClient.get(params, function(err, data){
     if (err){
       console.log("Error", err, data);
+      callback(err, response);
     }
     else {
       console.log("Success", data);
-      data.key = key_rsa;
-      return data  ;
+      ssh =  new SSH({
+        'host': data.Item.host, //param
+        'port':  16828, //param
+        'user': data.Item.username, //param
+        'key': key_rsa //fixe 
+      });
+      repertoireCourant = data.Item.currentRepertory;
+      callback(null, repertoireCourant); 
     }
   })
 }
-
-function etablirConnexionSSH(userId){
+function etablirConnexionSSH(userId, callback){
   const sshConfig = loadSSHConfig(userId)
   return new SSH(sshConfig)
 }
-
-function majRepertoireActuel(userId,nouveauRepertoire){
+function recupereRepertoireCourant(userId, callback){
+  var params = {
+    TableName: 'users',
+    Key:{
+        "ID": userId
+      }
+    };
+      documentClient.get(params, function(err, data) {
+        if (err) {
+            console.error("Unable to read item. Error JSON:", JSON.stringify(err, null, 2));
+            callback(err, response);
+        } else {
+            console.log("GetItem succeeded:", JSON.stringify(data, null, 2));
+           call(null,data.Item.currentDirectory); // currentDirectory = nom de l'attribut qui contient le rep courant
+        }
+    });
+}
+function majRepertoireActuel(userId,nouveauRepertoire, callback){
   var params = {
     Key: {
-      Id : userId
+      'ID' : userId
     },
     ExpressionAttributeValues: {
       ':nouveauRep' : nouveauRepertoire,
     },
-    UpdateExpression: 'set #CurrentDir = :nouveauRep',
-    TableName : 'users'
+    UpdateExpression: 'set currentRepertory = :nouveauRep',
+    TableName : 'users', 
+    ReturnValues:"UPDATED_NEW"
   };
-  return documentClient.get(params, function(err, data){
+  return documentClient.update(params, function(err, data){
     if (err){
       console.log("Error", err, data);
+      callback(err, data);
     }
     else {
       console.log("Success", data);
-      data.key = key_rsa;
-      return data  ;
+      callback(data.Attributes.currentRepertory);
     }
   })
 }
+function addSSHconfig(username,host,port){
+  var params = {
+    TableName:'users',
+    Item:{
+        "ID" : '24',
+        "host": host,
+        "port": port,
+        "uername": username
+
+    }
+  };
+  
+  console.log("Adding a new sshconfig...");
+  docClient.put(params, function(err, data) {
+    if (err) {
+        console.error("Unable to add item. Error JSON:", JSON.stringify(err, null, 2));
+    } else {
+        console.log("Added item:", JSON.stringify(data, null, 2));
+    }
+  });
+  
+}
 
 const handlers = {
-  'LaunchRequest': function () {
-      this.emit("LancementUsuel");
+  'LaunchRequest': function () { 
+  let _self=this;
+//  console.log(ssh);
+//console.log("ON Y EST");
+ //console.log("Le repertoire courant est " + repertoireCourant);
+ chargerConfigSSH('23', function(err, result) {
+   if(err){
+    console.log(err)
+    _self.emit(':ask', ERREUR_SSH);
+   } else {
+        repertoireCourant = result;
+        _self.emit(':ask', "Bienvenue, vous etes au repertoire " + repertoireCourant );
+      }
+ });
+  
+},
+'ModifConfig': function() {
+  let _self = this;
+  let promesse = new Promise( function(resolve, reject) {
+   var data =  majRepertoireActuel('23','/home/h')
+   resolve(data)
+  });
+  promesse.then(function(value) {
+    repertoireCourant = value.attributes.currentDirectory;
+    _self.emit(':ask', "modif ok?");
+  })
+  .catch(function(e) {
+    console.log(e); // "erreur avec la commande"
+    _self.emit(':ask', "verifiez vos parametres");
+  });
+
+},
+  'AddConfig': function () {
+    var _self = this;
+    //verifier la connexion - param vide
+   var username = 'h';
+   var host = '0.tcp.ngrok.io';
+   var port = 16828;
+   var params = {
+    TableName:'users',
+    Item:{
+        "ID" : '24',
+        "host": host,
+        "port": port,
+        "username": username
+    }
+  };
+  
+  console.log("Adding a new sshconfig...");
+  documentClient.put(params, function(err, data) {
+    if (err) {
+        console.error("Unable to add item. Error JSON:", JSON.stringify(err, null, 2));
+    } else {
+      _self.emit("LancementUsuel");
+        console.log("Added item:", JSON.stringify(data, null, 2));
+    }
+  });
+   //addSSHconfig(username,host,port);
+       // configuration
+  // sinon 
+    ///  
     //this.emit("PremiereFois");
     },
 
   'LancementUsuel': function () {
+      console.log("Port lancement usuel " + ssh.port);
+      console.log("usuel lancement " + ssh.user);
+      console.log("usle Host lancement " + ssh.host);
+      
       let _self = this;
       let promesse = new Promise( function(resolve, reject) {
         ssh.exec('pwd', {  // Commande de test
           exit :  (code, stdout, stderr ) => code == 0 ? resolve("ok") :  reject(stderr)
         }).start()
         ssh.on('error', function(err) {
+          console.log(err);
           _self.emit(':ask', ERREUR_SSH);
           ssh.end();
         });
@@ -135,7 +252,7 @@ const handlers = {
   'CmdPWD': function () {
     let _self = this;
     let promesse = new Promise( function(resolve, reject) {
-      ssh.exec('pwd', { 
+      ssh.exec('cd' + repertoireCourant + " && pwd", { 
         exit :  (code, stdout, stderr ) => code == 0 ? resolve(stdout) :  reject(stderr) 
       }).start()
       ssh.on('error', function(err) {
@@ -216,6 +333,7 @@ const handlers = {
         exit :  (code, stdout, stderr ) => code == 0 ? resolve("ok") :  reject(stderr)
       }).start()
       ssh.on('error', function(err) {
+        console.log(err);
         _self.emit(':ask', ERREUR_SSH);
         ssh.end();
       });
@@ -237,7 +355,7 @@ const handlers = {
     let chemin = cheminBrut.replace(/ .*/,''); //on recupere juste le premier ensemble de la chaine
    // console.log(chemin);
     let promesse = new Promise( function(resolve, reject) {
-      ssh.exec('cd ' + chemin + " && pwd", {
+      ssh.exec('cd ' + repertoireCourant + " cd " + chemin + " && pwd", {
         exit :  (code, stdout, stderr ) => code == 0 ? resolve(stdout) :  reject(stderr)
       }).start()
       ssh.on('error', function(err) {
@@ -246,8 +364,20 @@ const handlers = {
       });
     });
     promesse.then(function(value) {
-      // console.log(value);
-       _self.emit(':ask', "Je suis maintenant dans " + value);
+          majRepertoireActuel('23', value, function(err, res){
+                if(err){
+                  console.log(err); // "erreur avec la commande"
+                  _self.emit(':ask', "Je n'arrive pas à me deplacer dans le chemin");
+                } else {
+                  console.log(res);
+                  repertoireCourant = res;
+                  _self.emit(':ask', "Je suis maintenant dans " + res);
+                 }
+              })
+              .catch(function(e) {
+                console.log(e); // "erreur avec la commande"
+                _self.emit(':ask', "Je n'arrive pas à me deplacer dans le chemin");
+              });
       })
       .catch(function(e) {
         console.log(e); // erreur
