@@ -23,9 +23,6 @@ const ERREUR_SSH = "Il semble qu\'il y a un problème avec votre connexion SSH. 
 //const sshConfig = chargerConfigSSH("23");
 
 var ssh = new SSH({
-  'host': 'localhost', //param
-  'port':  19686, //param
-  'user': 'camille', //param
   'key': key_rsa //fixe 
 });
 
@@ -44,13 +41,16 @@ function chargerConfigSSH(userId, callback){
     }
     else {
       console.log("Success", data);
+      repertoireCourant = (data.Item.currentRepertory).replace(/\n/g,"");
       ssh =  new SSH({
         'host': data.Item.host, //param
-        'port':  16828, //param
-        'user': data.Item.username, //param
-        'key': key_rsa //fixe 
+        'port':  16555, //param
+        'user': data.Item.username,//param
+        'key': key_rsa, 
+        'baseDir': repertoireCourant // se deplace dans le rep enregistré ou par defaut le repertoire actuel (home)
       });
-      repertoireCourant = data.Item.currentRepertory;
+      console.log(ssh);
+
       callback(null, repertoireCourant); 
     }
   })
@@ -82,7 +82,7 @@ function majRepertoireActuel(userId,nouveauRepertoire, callback){
       'ID' : userId
     },
     ExpressionAttributeValues: {
-      ':nouveauRep' : nouveauRepertoire,
+      ':nouveauRep' : nouveauRepertoire.replace(/ .*/,'').replace(/\n/g, ""),
     },
     UpdateExpression: 'set currentRepertory = :nouveauRep',
     TableName : 'users', 
@@ -95,7 +95,7 @@ function majRepertoireActuel(userId,nouveauRepertoire, callback){
     }
     else {
       console.log("Success", data);
-      callback(data.Attributes.currentRepertory);
+      callback(null,data.Attributes.currentRepertory);
     }
   })
 }
@@ -251,47 +251,62 @@ const handlers = {
 
   'CmdPWD': function () {
     let _self = this;
-    let promesse = new Promise( function(resolve, reject) {
-      ssh.exec('cd' + repertoireCourant + " && pwd", { 
-        exit :  (code, stdout, stderr ) => code == 0 ? resolve(stdout) :  reject(stderr) 
-      }).start()
-      ssh.on('error', function(err) {
-        _self.emit(':ask', ERREUR_SSH);
-        ssh.end();
-      });
+    chargerConfigSSH('23', function(err, cheminActuel) {
+      if(err){
+       console.log(err)
+       _self.emit(':ask', ERREUR_SSH);
+      } else {
+        let promesse = new Promise( function(resolve, reject) {
+          ssh.exec('pwd', { 
+            exit :  (code, stdout, stderr ) => code == 0 ? resolve(stdout) :  reject(stderr) 
+          }).start()
+          ssh.on('error', function(err) {
+            console.log(err);
+            _self.emit(':ask', ERREUR_SSH);
+            ssh.end();
+          });
+        });
+        promesse.then(function(value) {
+          console.log(value);  
+          _self.emit(':ask', "Je me trouve actuellement au : " + value);
+            })
+          .catch(function(e) {
+            console.log(e); // "erreur avec la commande"
+            _self.emit(':ask', "J'ai du mal à rejoindre votre dossier personnel, verifiez vos parametres");
+          })
+         }
     });
-    promesse.then(function(value) {
-      console.log(value);  
-      _self.emit(':ask', "Je me trouve actuellement au : " + value);
-        })
-      .catch(function(e) {
-        console.log(e); // "erreur avec la commande"
-        _self.emit(':ask', "J'ai du mal à rejoindre votre dossier personnel, verifiez vos parametres");
-      })
-    },
+  },
 
   'CmdLS': function () {
     let _self = this;
-    let promesse = new Promise( function(resolve, reject) {
-      ssh.exec('ls | head -5', { 
-        exit :  (code, stdout, stderr ) => code == 0 ? resolve(stdout) :  reject(stderr)
-      }).start()
-      ssh.on('error', function(err) {
-        _self.emit(':ask', ERREUR_SSH);
-        ssh.end();
-      });
-    });
-    promesse.then(function(value) {
-        if(value){
-           console.log(value);  
-          _self.emit(':ask', "Les 5 premiers éléments du répertoire sont : " + value.replace(/\n/g, ","));
-        } else {
-          _self.emit(':ask', "Le repertoire est vide");
-        } })
-      .catch(function(e) {
-        console.log(e); // "erreur avec la commande"
-        _self.emit(':ask', "Je n'arrive pas à lister vos fichiers.");
-      });
+    chargerConfigSSH('23', function(err, cheminActuel) {
+      if(err) {
+       console.log(err)
+       _self.emit(':ask', ERREUR_SSH);
+      } else {
+        let promesse = new Promise( function(resolve, reject) {
+          ssh.exec("ls | head -5", { 
+            exit :  (code, stdout, stderr ) => code == 0 ? resolve(stdout) :  reject(stderr)
+          }).start()
+          ssh.on('error', function(err) {
+            _self.emit(':ask', ERREUR_SSH);
+            ssh.end();
+          });
+        });
+        promesse.then(function(value) {
+            if(value){
+               console.log(value);  
+              _self.emit(':ask', "Les 5 premiers éléments du répertoire sont : " + value.replace(/\n/g, ","));
+            } else {
+              _self.emit(':ask', "Le repertoire est vide");
+            } })
+          .catch(function(e) {
+            console.log(e); // "erreur avec la commande"
+            _self.emit(':ask', "Je n'arrive pas à lister vos fichiers.");
+          });
+         }
+       });
     },
     
     'CmdMKDIR': function () {
@@ -349,40 +364,44 @@ const handlers = {
   }
 },
 
-  'CmdCD': function () {
-    let _self = this;
-    let cheminBrut = this.event.request.intent.slots.chemin.value;
-    let chemin = cheminBrut.replace(/ .*/,''); //on recupere juste le premier ensemble de la chaine
-   // console.log(chemin);
-    let promesse = new Promise( function(resolve, reject) {
-      ssh.exec('cd ' + repertoireCourant + " cd " + chemin + " && pwd", {
-        exit :  (code, stdout, stderr ) => code == 0 ? resolve(stdout) :  reject(stderr)
-      }).start()
-      ssh.on('error', function(err) {
-        _self.emit(':ask', ERREUR_SSH);
-        ssh.end();
+'CmdCD': function () {
+  let _self = this;
+  chargerConfigSSH('23', function(err, cheminActuel) {
+    if(err) {
+       console.log(err)
+       _self.emit(':ask', ERREUR_SSH);
+    } else {
+      let cheminBrut = _self.event.request.intent.slots.chemin.value;
+      let chemin = cheminBrut.replace(/ .*/,''); //on recupere juste le premier ensemble de la chaine
+      // console.log(chemin);
+      let promesse = new Promise( function(resolve, reject) {
+        ssh.exec("cd " + chemin + " && pwd", {
+          exit :  (code, stdout, stderr ) => code == 0 ? resolve(stdout) :  reject(stderr)
+        }).start()
+        ssh.on('error', function(err) {
+          _self.emit(':ask', ERREUR_SSH);
+          ssh.end();
+        });
       });
-    });
-    promesse.then(function(value) {
-          majRepertoireActuel('23', value, function(err, res){
-                if(err){
-                  console.log(err); // "erreur avec la commande"
-                  _self.emit(':ask', "Je n'arrive pas à me deplacer dans le chemin");
-                } else {
-                  console.log(res);
-                  repertoireCourant = res;
-                  _self.emit(':ask', "Je suis maintenant dans " + res);
-                 }
-              })
-              .catch(function(e) {
-                console.log(e); // "erreur avec la commande"
-                _self.emit(':ask', "Je n'arrive pas à me deplacer dans le chemin");
-              });
+      promesse.then(function(value) {
+        majRepertoireActuel('23', value, function(err, res){
+          if(err){
+            console.log(err); // "erreur avec la commande"
+            _self.emit(':ask', "Je n'arrive pas à me deplacer dans le chemin");
+          } else {
+            console.log(res);
+            repertoireCourant = res;
+            _self.emit(':ask', "Je suis maintenant dans " + res);
+            }
+        })
       })
       .catch(function(e) {
-        console.log(e); // erreur
-        _self.emit(':ask', "Je n'arrive pas à me deplacer dans le chemin ");
+        console.log(e); // "erreur avec la commande"
+        _self.emit(':ask', "Je n'arrive pas à me deplacer dans le chemin, il est surement incorrect.");
       });
+    }
+ });
+
   },
 
   'CmdRM': function () {
