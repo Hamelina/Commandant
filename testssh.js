@@ -3,13 +3,16 @@ const fs = require('fs')
 const path = require('path')
 const key_rsa = fs.readFileSync(path.resolve(__dirname, './id_rsa'), 'utf8')
 
-const ssh = new SSH({
-  host: '0.tcp.ngrok.io', //param
-  port: 18674, //param
-  user: 'h', //param
-  key: key_rsa //fixe 
+var ssh = new SSH({
+  'host': 'localhost', //param
+  'port': 24, //param
+  'user': 'h',
+  'baseDir': undefined | './', //param
+  'key': key_rsa //fixe 
 });
  var rep = 'repodsfssdc';
+ console.log(ssh.port);
+ssh.port = 22;
   var promise1 = new Promise( function(resolve, reject) {
     ssh.exec('ls | head -5' , {
       exit :  (code, stdout, stderr ) => code == 0 ? resolve(stdout) :  reject(stderr)

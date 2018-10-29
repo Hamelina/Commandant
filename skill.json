@@ -199,7 +199,21 @@
                         }
                     ],
                     "samples": [
-                        "supprime le fichier {nomFichier}"
+                        "supprime le fichier {nomFichier}",
+                        "r. m. {nomfichier}"
+                    ]
+                },
+                {
+                    "name": "CmdRMR",
+                    "slots": [
+                        {
+                            "name": "nomFichier",
+                            "type": "AMAZON.SearchQuery"
+                        }
+                    ],
+                    "samples": [
+                        "supprime le répertoire {nomFichier}",
+                        "r. m. r. {nomFichier}"
                     ]
                 },
                 {
