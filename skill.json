@@ -199,18 +199,13 @@
                 },
                 {
                     "name": "CmdGITPUSH",
-                    "slots": [
-                        {
-                            "name": "commitPush",
-                            "type": "AMAZON.SearchQuery"
-                        }
-                    ],
                     "samples": [
-                        "git push {commitPush}",
-                        "push {commitPush}",
-                        "push moi {commitPush}",
-                        "envoie sur git {commitPush}",
-                        "envoie {commitPush}"
+                        "git push",
+                        "push",
+                        "push moi",
+                        "envoie sur git",
+                        "envoie le commit",
+                        "push le commit"
                     ]
                 }
             ],
