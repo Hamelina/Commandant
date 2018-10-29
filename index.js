@@ -94,6 +94,22 @@ const handlers = {
           _self.emit(':ask', "J'ai du mal à rejoindre votre dossier personnel, verifiez vos parametres");
         });
      },  
+  'Config': function () {
+    this.emit(':ask', "Nous allons commencer la configuration, donnez moi votre nom de domaine. Pour cela dites 'Mon domaine est ...suivi du nom votre de domaine', Merci");
+  },
+
+  'ConfigHost': function () {
+    let  host = this.event.request.intent.slots.host.value;
+    this.emit(':ask', "Votre domaine est "+host+"? Pour passer à la configuration de votre nom d'utilisateur dites: 'Mon nom est ...suivi de votre nom d'utilisateur sinon redites 'Mon domaine est ...suivi du votre nom de domaine'");
+  },
+  'ConfigUsername': function () {
+    let  username = this.event.request.intent.slots.nomUtilisateur.value;
+    this.emit(':ask', "Votre nom d'utilisateur est "+username+"? Pour passer à la configuration du port dites: 'Mon port est ...suivi du numero de port sinon redites 'Mon nom est ...suivi de votre nom d'utilisateur'");
+  },
+  'ConfigPort': function () {
+    let  port = this.event.request.intent.slots.port.value;
+    this.emit(':ask', "La configuration est terminée. Votre domaine est"+host+", votre nom d'utilisateur est "+username+", votre port est "+port);
+  },
 
   'PremiereFois': function () {
       let _self = this;
