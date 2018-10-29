@@ -69,6 +69,23 @@ function majRepertoireActuel(userId,nouveauRepertoire){
   })
 }
 
+function majConfigSSH(userId, host, port, userName, callback){
+  var params = {
+    Key: {
+      Id : userId
+    },
+    ExpressionAttributeValues: {
+      ':host' : host,
+      ':port' : port,
+      ':userName' : userName
+    },
+    UpdateExpression: 'set Host = :host, Port = :port, UserName = :userName',
+    TableName : 'users'
+  };
+  return documentClient.update(params, callback)
+}
+
+
 const handlers = {
   'LaunchRequest': function () {
       this.emit("LancementUsuel");
@@ -447,6 +464,27 @@ const handlers = {
         this.emit(':tell','Profil ajouté avec succès !')
     }.bind(this));
   },
+
+  'updateUser': function () {
+    var params = {
+      userId : this.event.session.user.userId,
+      host : this.event.host,
+      port : this.event.port,
+      userName : this.event.userName
+    };
+    console.log("HERE")
+    majConfigSSH(this.event.session.user.userId,
+                      this.event.host,
+                      this.event.port, 
+                      this.event.userName,
+                      function(err, data){
+      if (err)
+        console.log("Error", err, data);
+      else 
+        this.emit(':ask','Profil mis à jour avec succès !')
+    }.bind(this));
+  },
+
   'findUser': function () {
     var params = {
       ExpressionAttributeValues: {
