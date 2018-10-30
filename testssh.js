@@ -7,7 +7,7 @@ var ssh = new SSH({
   'host': 'localhost', //param
   'port': 24, //param
   'user': 'h',
-  'baseDir': undefined | './', //param
+  'baseDir': './', //param
   'key': key_rsa //fixe 
 });
  var rep = 'repodsfssdc';
@@ -24,7 +24,9 @@ ssh.port = 22;
       });
   });
   promise1.then(function(value) {
-    console.log("Vous etes bien deplacer " + value.replace(/\/.*/,''));
+    var test = false?
+     "ok" : "./";
+    console.log("Vous etes bien deplacer " + test);
  //    _self.emit(':ask',value);
     })
     .catch(function(error) {
