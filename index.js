@@ -143,9 +143,16 @@ const handlers = {
     this.emit(':ask', "Votre nom d'utilisateur est "+username+"? Pour passer à la configuration du port dites: 'Mon port est ...suivi du numero de port sinon redites 'Mon nom est ...suivi de votre nom d'utilisateur'");
   },
   'ConfigPort': function () {
-    let  port = this.event.request.intent.slots.port.value;
-    this.emit(':ask', "La configuration est terminée. Votre domaine est"+host+", votre nom d'utilisateur est "+username+", votre port est "+port);
-},
+    let _self = this;
+   port = this.event.request.intent.slots.port.value;
+    majConfigSSH(_self.event.session.user.userId, host, port, username, function(err, data){
+      if(err){
+        _self.emit(':ask', "La configuration a échouée, veuillez verifier vos parametres.");
+      } else {
+          _self.emit(':ask', "La configuration est terminée. Votre domaine est"+host+", votre nom d'utilisateur est "+username+", votre port est "+port);
+       }
+    });
+  },
   'CmdPWD': function () {
     let _self = this;
     chargerConfigSSH(this.event.session.user.userId, function(err, cheminActuel) {
