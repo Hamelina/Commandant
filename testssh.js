@@ -5,9 +5,8 @@ const key_rsa = fs.readFileSync(path.resolve(__dirname, './id_rsa'), 'utf8')
 
 var ssh = new SSH({
   'host': 'localhost', //param
-  'port': 24, //param
+  'port': 22, //param
   'user': 'h',
-  'baseDir': './', //param
   'key': key_rsa //fixe 
 });
  var rep = 'repodsfssdc';
