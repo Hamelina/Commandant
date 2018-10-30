@@ -144,11 +144,18 @@ const handlers = {
   },
   'ConfigPort': function () {
     let _self = this;
-   port = this.event.request.intent.slots.port.value;
+    port = this.event.request.intent.slots.port.value;
     majConfigSSH(_self.event.session.user.userId, host, port, username, function(err, data){
       if(err){
-        _self.emit(':ask', "La configuration a échouée, veuillez verifier vos parametres.");
-      } else {
+        addConfigSSH(_self.event.session.user.userId, host, port, username, function(err, data){
+          if(err) {
+            _self.emit(':ask', "La configuration a échouée, veuillez verifier vos parametres.");
+          } else {
+           _self.emit(':ask', "La configuration est terminée. Votre domaine est"+host+", votre nom d'utilisateur est "+username+", votre port est "+port);
+          }
+       });
+      } 
+      else {
           _self.emit(':ask', "La configuration est terminée. Votre domaine est"+host+", votre nom d'utilisateur est "+username+", votre port est "+port);
        }
     });
