@@ -21,13 +21,17 @@ const STOP_MESSAGE = 'Au revoir!';
 const UNHANDLED_MESSAGE =  "Désolé je n'ai pas compris ça";
 const ERREUR_SSH = "Il semble qu\'il y a un problème avec votre connexion SSH. Vérifiez vos paramètres."
 //const sshConfig = chargerConfigSSH("23");
-const userId = '23';
+//const userId = this.event.session.user.userId;
 var ssh = new SSH({
   'key': key_rsa //fixe 
 });
 
 var repertoireCourant = "./";
+var host;
+var port;
+var username;
 function chargerConfigSSH(userId, callback){
+  console.log(userId);
   var params = {
     Key: {
       "ID": userId
@@ -35,16 +39,18 @@ function chargerConfigSSH(userId, callback){
     TableName : 'users'
   };
   return documentClient.get(params, function(err, data){
-    if (err){
+    if (err ){
       console.log("Error", err, data);
-      callback(err, response);
-    }
-    else {
+      callback(err, data);
+    } else if (!data.Item){ // premiere fois 
+      callback("Premiere", data);
+    } else {
       console.log("Success", data);
-      repertoireCourant = (data.Item.currentRepertory).replace(/\n/g,"");
+      repertoireCourant = data.Item.currentRepertory ?
+        (data.Item.currentRepertory).replace(/\n/g,"") : "./";
       ssh =  new SSH({
         'host': data.Item.host, //param
-        'port': 17339, //param
+        'port':  data.Item.port, //param
         'user': data.Item.username,//param
         'key': key_rsa, 
         'baseDir': repertoireCourant // se deplace dans le rep enregistré ou par defaut le repertoire actuel (home)
@@ -57,23 +63,7 @@ function etablirConnexionSSH(userId, callback){
   const sshConfig = loadSSHConfig(userId)
   return new SSH(sshConfig)
 }
-function recupereRepertoireCourant(userId, callback){
-  var params = {
-    TableName: 'users',
-    Key:{
-        "ID": userId
-      }
-    };
-      documentClient.get(params, function(err, data) {
-        if (err) {
-            console.error("Unable to read item. Error JSON:", JSON.stringify(err, null, 2));
-            callback(err, response);
-        } else {
-            console.log("GetItem succeeded:", JSON.stringify(data, null, 2));
-           call(null,data.Item.currentDirectory); // currentDirectory = nom de l'attribut qui contient le rep courant
-        }
-    });
-}
+
 function majRepertoireActuel(userId,nouveauRepertoire, callback){
   var params = {
     Key: {
@@ -97,28 +87,6 @@ function majRepertoireActuel(userId,nouveauRepertoire, callback){
     }
   })
 }
-function addSSHconfig(username,host,port){
-  var params = {
-    TableName:'users',
-    Item:{
-        "ID" : '24',
-        "host": host,
-        "port": port,
-        "uername": username
-
-    }
-  };
-  
-  console.log("Adding a new sshconfig...");
-  docClient.put(params, function(err, data) {
-    if (err) {
-        console.error("Unable to add item. Error JSON:", JSON.stringify(err, null, 2));
-    } else {
-        console.log("Added item:", JSON.stringify(data, null, 2));
-    }
-  });
-  
-}
 
 function majConfigSSH(userId, host, port, userName, callback){
   var params = {
@@ -130,142 +98,57 @@ function majConfigSSH(userId, host, port, userName, callback){
       ':port' : port,
       ':userName' : userName
     },
-    UpdateExpression: 'set Host = :host, Port = :port, UserName = :userName',
+    UpdateExpression: 'set host = :host, port = :port, username = :userName',
     TableName : 'users'
   };
-  return documentClient.update(params, callback)
+return documentClient.update(params, callback)
 }
 
+function addConfigSSH(userId, host, port, username, callback){
+  var params = {
+      TableName:'users',
+      Item:{
+          "ID" : userId,
+          "host": host,
+          "port": port,
+          "username": username
+      }
+  };
+  return documentClient.put(params, callback)
+}
 
 const handlers = {
   'LaunchRequest': function () { 
   let _self=this;
-//  console.log(ssh);
-//console.log("ON Y EST");
- //console.log("Le repertoire courant est " + repertoireCourant);
- chargerConfigSSH(userId, function(err, cheminActuel) {
-   if(err){
-    console.log(err)
-    _self.emit(':ask', ERREUR_SSH);
+  chargerConfigSSH(this.event.session.user.userId, function(err, cheminActuel) {
+  if(err){
+    err == "Premiere" ? 
+     _self.emit(':ask', 'Bienvenue dans votre gestionnaire de fichiers. Il s’agit de votre première utilisation. Commandant vous permet de gérer vos dossiers, fichiers, et pour les plus aguerri: le versionning de votre code avec Github. Commencez par configurer votre connexion SSH. Dites configuration.') 
+   : _self.emit(':ask', ERREUR_SSH);
    } else {
-        repertoireCourant = cheminActuel;
-        _self.emit(':ask', "Commandant à votre écoute,   vous êtes au répertoire " + repertoireCourant );
-      }
- });
-  
-},
-'ModifConfig': function() {
-  let _self = this;
-  let promesse = new Promise( function(resolve, reject) {
-   var data =  majRepertoireActuel(usedId,'/home/h')
-   resolve(data)
-  });
-  promesse.then(function(value) {
-    repertoireCourant = value.attributes.currentDirectory;
-    _self.emit(':ask', "modif ok?");
-  })
-  .catch(function(e) {
-    console.log(e); // "erreur avec la commande"
-    _self.emit(':ask', "verifiez vos parametres");
-  });
-
-},
-  'AddConfig': function () {
-    var _self = this;
-    //verifier la connexion - param vide
-   var username = 'h';
-   var host = '0.tcp.ngrok.io';
-   var port = 16828;
-   var params = {
-    TableName:'users',
-    Item:{
-        "ID" : '24',
-        "host": host,
-        "port": port,
-        "username": username
-    }
-  };
-  
-  console.log("Adding a new sshconfig...");
-  documentClient.put(params, function(err, data) {
-    if (err) {
-        console.error("Unable to add item. Error JSON:", JSON.stringify(err, null, 2));
-    } else {
-      _self.emit("LancementUsuel");
-        console.log("Added item:", JSON.stringify(data, null, 2));
+    repertoireCourant = cheminActuel;
+    _self.emit(':ask', "Commandant à votre écoute, quelle commande voulez-vous lancer ?" );
     }
   });
-   //addSSHconfig(username,host,port);
-       // configuration
-  // sinon 
-    ///  
-    //this.emit("PremiereFois");
-    },
-
-  'LancementUsuel': function () {
-      console.log("Port lancement usuel " + ssh.port);
-      console.log("usuel lancement " + ssh.user);
-      console.log("usle Host lancement " + ssh.host);
-      
-      let _self = this;
-      let promesse = new Promise( function(resolve, reject) {
-        ssh.exec('pwd', {  // Commande de test
-          exit :  (code, stdout, stderr ) => code == 0 ? resolve("ok") :  reject(stderr)
-        }).start()
-        ssh.on('error', function(err) {
-          console.log(err);
-          _self.emit(':ask', ERREUR_SSH);
-          ssh.end();
-        });
-      });
-      promesse.then(function(value) {
-          _self.emit(':ask', "Commandant à votre écoute ! Quelle commande voulez-vous lancer ?");
-        })
-        .catch(function(e) {
-          console.log(e); // "erreur avec la commande"
-          _self.emit(':ask', "J'ai du mal à rejoindre votre dossier personnel, verifiez vos parametres");
-        });
-     },  
+},
   'Config': function () {
     this.emit(':ask', "Nous allons commencer la configuration, donnez moi votre nom de domaine. Pour cela dites 'Mon domaine est ...suivi du nom votre de domaine', Merci");
   },
   'ConfigHost': function () {
-    let  host = this.event.request.intent.slots.host.value;
+    host = this.event.request.intent.slots.host.value;
     this.emit(':ask', "Votre domaine est "+host+"? Pour passer à la configuration de votre nom d'utilisateur dites: 'Mon nom est ...suivi de votre nom d'utilisateur sinon redites 'Mon domaine est ...suivi du votre nom de domaine'");
   },
   'ConfigUsername': function () {
-    let  username = this.event.request.intent.slots.nomUtilisateur.value;
+   username = this.event.request.intent.slots.nomUtilisateur.value;
     this.emit(':ask', "Votre nom d'utilisateur est "+username+"? Pour passer à la configuration du port dites: 'Mon port est ...suivi du numero de port sinon redites 'Mon nom est ...suivi de votre nom d'utilisateur'");
   },
   'ConfigPort': function () {
     let  port = this.event.request.intent.slots.port.value;
     this.emit(':ask', "La configuration est terminée. Votre domaine est"+host+", votre nom d'utilisateur est "+username+", votre port est "+port);
-  },
-
-  'PremiereFois': function () {
-      let _self = this;
-      let promesse = new Promise( function(resolve, reject) {
-        ssh.exec('pwd', { 
-          exit :  (code, stdout, stderr ) => code == 0 ? resolve("ok") :  reject(stderr)
-        }).start()
-        ssh.on('error', function(err) {
-          _self.emit(':ask', ERREUR_SSH);
-          ssh.end();
-        });
-      });
-      promesse.then(function(value) {
-        console.log(value);  
-          _self.emit(':ask', 'Bienvenue dans votre gestionnaire de fichiers. Il s’agit de votre première utilisation. Commandant vous permet de gérer vos dossiers, fichiers, et pour les plus aguerri: le versionning de votre code avec Github. Actuellement vous êtes à votre répertoire personnel. Que voulez vous faire ?');
-        })
-        .catch(function(e) {
-         console.log(e); // "erreur avec la commande"
-          _self.emit(':ask', "J'ai du mal à rejoindre votre dossier personnel, verifiez vos parametres");
-               });
-     },  
-
+},
   'CmdPWD': function () {
     let _self = this;
-    chargerConfigSSH(userId, function(err, cheminActuel) {
+    chargerConfigSSH(this.event.session.user.userId, function(err, cheminActuel) {
       if(err){
        console.log(err)
        _self.emit(':ask', ERREUR_SSH);
@@ -294,7 +177,7 @@ const handlers = {
 
   'CmdLS': function () {
     let _self = this;
-    chargerConfigSSH(userId, function(err, cheminActuel) {
+    chargerConfigSSH(this.event.session.user.userId, function(err, cheminActuel) {
       if(err) {
        console.log(err)
        _self.emit(':ask', ERREUR_SSH);
@@ -327,7 +210,7 @@ const handlers = {
       var nomRepertoire;
       let  intentObj = this.event.request.intent;
       let _self = this;
-      chargerConfigSSH(userId, function(err, cheminActuel) {
+      chargerConfigSSH(this.event.session.user.userId, function(err, cheminActuel) {
         if(err){
          console.log(err)
          _self.emit(':ask', ERREUR_SSH);
@@ -387,7 +270,7 @@ const handlers = {
 
 'CmdCD': function () {
   let _self = this;
-  chargerConfigSSH(userId, function(err, cheminActuel) {
+  chargerConfigSSH(this.event.session.user.userId, function(err, cheminActuel) {
     if(err) {
        console.log(err)
        _self.emit(':ask', ERREUR_SSH);
@@ -405,7 +288,7 @@ const handlers = {
         });
       });
       promesse.then(function(value) {
-        majRepertoireActuel(userId, value, function(err, res){
+        majRepertoireActuel(this.event.session.user.userId, value, function(err, res){
           if(err){
             console.log(err); // "erreur avec la commande"
             _self.emit(':ask', "Je n'arrive pas à me deplacer dans le chemin");
@@ -427,7 +310,7 @@ const handlers = {
 
   'CmdRM': function () {
     let _self = this;
-    chargerConfigSSH(userId, function(err, cheminActuel) {
+    chargerConfigSSH(this.event.session.user.userId, function(err, cheminActuel) {
       if(err){
        console.log(err)
        _self.emit(':ask', ERREUR_SSH);
@@ -488,7 +371,7 @@ const handlers = {
 },
 'CmdRMR': function () {
   let _self = this;
-  chargerConfigSSH(userId, function(err, cheminActuel) {
+  chargerConfigSSH(this.event.session.user.userId, function(err, cheminActuel) {
     if(err){
         console.log(err)
         _self.emit(':ask', ERREUR_SSH);
@@ -549,7 +432,7 @@ const handlers = {
 
 'CmdGITPULL': function () {
     let _self = this;
-    chargerConfigSSH(userId, function(err, cheminActuel) {
+    chargerConfigSSH(this.event.session.user.userId, function(err, cheminActuel) {
       if(err){
        console.log(err)
        _self.emit(':ask', ERREUR_SSH);
@@ -578,7 +461,7 @@ const handlers = {
   
   'CmdGITCOMMIT': function () {
     let _self = this;
-    chargerConfigSSH(userId, function(err, cheminActuel) {
+    chargerConfigSSH(this.event.session.user.userId, function(err, cheminActuel) {
       if(err){
        console.log(err)
        _self.emit(':ask', ERREUR_SSH);
@@ -609,7 +492,7 @@ const handlers = {
   
   'CmdGITADD': function () {
     let _self = this;
-    chargerConfigSSH(userId, function(err, cheminActuel) {
+    chargerConfigSSH(this.event.session.user.userId, function(err, cheminActuel) {
       if(err){
        console.log(err)
        _self.emit(':ask', ERREUR_SSH);
@@ -640,10 +523,10 @@ const handlers = {
     var params = {
       Item : {
         "Id" : this.event.session.user.userId,
-        "Host" : this.event.host,
-        "Port" : this.event.port,
-        "UserName" : this.event.user,
-        "Key" : this.event.key
+        "host" : this.event.host,
+        "port" : this.event.port,
+        "username" : this.event.user
+       // "Key" : this.event.key la clé est unique a notre projet
       },
       TableName : 'users'
     };
