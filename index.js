@@ -3,25 +3,25 @@ var SSH = require('simple-ssh');
 const fs = require('fs')
 const path = require('path')
 const Alexa = require('alexa-sdk');
-
 const AWS = require('aws-sdk'),
   uuid = require('uuid');
   var documentClient = new AWS.DynamoDB.DocumentClient(); 
   
-  // Set the region 
-  AWS.config.update({region: 'eu-west-1'});
+// Set the region 
+AWS.config.update({region: 'eu-west-1'});
 
 const key_rsa = fs.readFileSync(path.resolve(__dirname, './id_rsa'), 'utf8')
 const APP_ID = process.env.APP_ID;
 
+// Prompt Constantes
 const SKILL_NAME = 'Commandant';
 const HELP_MESSAGE = 'Vous pouvez me donner un ordre or dire quitter pour arreter l\'execution... Que puis-je faire pour vous?';
 const HELP_REPROMPT = 'Comment puis-je vous aider?';
 const STOP_MESSAGE = 'Au revoir!';
 const UNHANDLED_MESSAGE =  "Désolé je n'ai pas compris ça";
 const ERREUR_SSH = "Il semble qu\'il y a un problème avec votre connexion SSH. Vérifiez vos paramètres."
-//const sshConfig = chargerConfigSSH("23");
-//const userId = this.event.session.user.userId;
+
+// Configuration ssh  
 var ssh = new SSH({
   'key': key_rsa //fixe 
 });
@@ -29,8 +29,13 @@ var repertoireCourant = "./";
 var host;
 var port;
 var username;
+
+/**
+ * Charge la configuration pour mettre en place la connexion SSH
+ * @param {*Utilisateur ID} userId 
+ * @param {*Fonction de callback} callback 
+ */
 function chargerConfigSSH(userId, callback){
-  console.log(userId);
   var params = {
     Key: {
       "ID": userId
@@ -41,30 +46,32 @@ function chargerConfigSSH(userId, callback){
     if (err ){
       console.log("Error", err, data);
       callback(err, data);
-    } else if (!data.Item){ // premiere fois 
-      callback("Premiere", data);
+    } else if (!data.Item) { // premiere connexion 
+        callback("Premiere", data);
     } else {
-      console.log("Success", data);
-      repertoireCourant = data.Item.currentRepertory ?
+        console.log("Success", data);
+        repertoireCourant = data.Item.currentRepertory ?
         (data.Item.currentRepertory).replace(/\n/g,"") : "./";
-      ssh =  new SSH({
+        ssh =  new SSH({
         'host': data.Item.host, //param
         'port':  data.Item.port, //param
         'user': data.Item.username,//param
         'key': key_rsa, 
         'baseDir': repertoireCourant // se deplace dans le rep enregistré ou par defaut le repertoire actuel (home)
       });
-      callback(null, repertoireCourant); 
+        callback(null, repertoireCourant); 
     }
   })
 }
-function etablirConnexionSSH(userId, callback){
-  const sshConfig = loadSSHConfig(userId)
-  return new SSH(sshConfig)
-}
 
-
-
+/**
+ * Met a jour la configuration SSH selon les parametres donnees 
+ * @param {*Idenfiant de l'utilisateur} userId 
+ * @param {*Nom de domaine} host 
+ * @param {*Port de connexion} port 
+ * @param {*Nom d'utilisateur} userName 
+ * @param {*Fonction de callback} callback 
+ */
 function majConfigSSH(userId, host, port, userName, callback){
   var params = {
     Key: {
@@ -78,9 +85,14 @@ function majConfigSSH(userId, host, port, userName, callback){
     UpdateExpression: 'set host = :host, port = :port, username = :userName',
     TableName : 'users'
   };
-return documentClient.update(params, callback)
+  return documentClient.update(params, callback)
 }
-
+/**
+ * Met a jour le repertoire courant de l'utilisateur
+ * @param {*Identifiant utilisateur} userId 
+ * @param {*Nouveau chemin/repertoire courant} nouveauRepertoire 
+ * @param {*Fonction de callback} callback 
+ */
 function majRepertoireActuel(userId,nouveauRepertoire, callback){
   var params = {
     Key: {
@@ -104,7 +116,14 @@ function majRepertoireActuel(userId,nouveauRepertoire, callback){
     }
   })
 }
-
+/**
+ * Ajoute une nouvelle configuration SSH
+ * @param {*Idenfiant de l'utilisateur} userId 
+ * @param {*Nom de domaine} host 
+ * @param {*Port de connexion} port 
+ * @param {*Nom d'utilisateur} userName 
+ * @param {*Fonction de callback} callback 
+ */
 function addConfigSSH(userId, host, port, username, callback){
   var params = {
       TableName:'users',
@@ -120,29 +139,33 @@ function addConfigSSH(userId, host, port, username, callback){
 
 const handlers = {
   'LaunchRequest': function () { 
-  let _self=this;
-  chargerConfigSSH(this.event.session.user.userId, function(err, cheminActuel) {
-  if(err){
-    err == "Premiere" ? 
-     _self.emit(':ask', 'Bienvenue dans votre gestionnaire de fichiers. Il s’agit de votre première utilisation. Commandant vous permet de gérer vos dossiers, fichiers, et pour les plus aguerri: le versionning de votre code avec Github. Commencez par configurer votre connexion SSH. Dites configuration.') 
-   : _self.emit(':ask', ERREUR_SSH);
-   } else {
-    repertoireCourant = cheminActuel;
-    _self.emit(':ask', "Commandant à votre écoute, quelle commande voulez-vous lancer ?" );
+    let _self=this;
+    chargerConfigSSH(this.event.session.user.userId, function(err, cheminActuel) {
+    if(err) {
+      err == "Premiere" ? 
+        _self.emit(':ask', 'Bienvenue dans votre gestionnaire de fichiers. Il s’agit de votre première utilisation. Commandant vous permet de gérer vos dossiers, fichiers, et pour les plus aguerri: le versionning de votre code avec Github. Commencez par configurer votre connexion SSH. Dites configuration.') 
+      : _self.emit(':ask', ERREUR_SSH);
+    } else {
+      repertoireCourant = cheminActuel;
+      _self.emit(':ask', "Commandant à votre écoute, quelle commande voulez-vous lancer ?" );
     }
   });
 },
+
   'Config': function () {
     this.emit(':ask', "Nous allons commencer la configuration, donnez moi votre nom de domaine. Pour cela dites 'Mon domaine est ...suivi du nom votre de domaine', Merci");
   },
+
   'ConfigHost': function () {
     host = this.event.request.intent.slots.host.value;
     this.emit(':ask', "Votre domaine est "+host+"? Pour passer à la configuration de votre nom d'utilisateur dites: 'Mon nom est ...suivi de votre nom d'utilisateur sinon redites 'Mon domaine est ...suivi du votre nom de domaine'");
   },
+
   'ConfigUsername': function () {
-   username = this.event.request.intent.slots.nomUtilisateur.value;
+    username = this.event.request.intent.slots.nomUtilisateur.value;
     this.emit(':ask', "Votre nom d'utilisateur est "+username+"? Pour passer à la configuration du port dites: 'Mon port est ...suivi du numero de port sinon redites 'Mon nom est ...suivi de votre nom d'utilisateur'");
   },
+
   'ConfigPort': function () {
     let _self = this;
     port = this.event.request.intent.slots.port.value;
@@ -161,27 +184,28 @@ const handlers = {
        }
     });
   },
+
+
   'CmdPWD': function () {
     let _self = this;
     chargerConfigSSH(this.event.session.user.userId, function(err, cheminActuel) {
       if(err){
-       console.log(err)
-       _self.emit(':ask', ERREUR_SSH);
+        console.log(err)
+        _self.emit(':ask', ERREUR_SSH);
       } else {
         let promesse = new Promise( function(resolve, reject) {
-          ssh.exec('pwd', { 
-            exit :  (code, stdout, stderr ) => code == 0 ? resolve(stdout) :  reject(stderr) 
+        ssh.exec('pwd', { 
+          exit :  (code, stdout, stderr ) => code == 0 ? resolve(stdout) :  reject(stderr)
           }).start()
-          ssh.on('error', function(err) {
-            console.log(err);
-            _self.emit(':ask', ERREUR_SSH);
-            ssh.end();
+        ssh.on('error', function(err) {
+          console.log(err);
+          _self.emit(':ask', ERREUR_SSH);
+          ssh.end();
           });
         });
-        promesse.then(function(value) {
-          console.log(value);  
-          _self.emit(':ask', "Je me trouve actuellement au : " + value);
-            })
+        promesse.then(function(value) { 
+            _self.emit(':ask', "Je me trouve actuellement au : " + value);
+          })
           .catch(function(e) {
             console.log(e); // "erreur avec la commande"
             _self.emit(':ask', "J'ai du mal à rejoindre votre dossier personnel, verifiez vos parametres");
@@ -303,7 +327,7 @@ const handlers = {
         });
       });
       promesse.then(function(value) {
-        majRepertoireActuel(this.event.session.user.userId, value, function(err, res){
+        majRepertoireActuel(_self.event.session.user.userId, value, function(err, res){
           if(err){
             console.log(err); // "erreur avec la commande"
             _self.emit(':ask', "Je n'arrive pas à me deplacer dans le chemin");
@@ -384,6 +408,7 @@ const handlers = {
          }
     }); 
 },
+
 'CmdRMR': function () {
   let _self = this;
   chargerConfigSSH(this.event.session.user.userId, function(err, cheminActuel) {

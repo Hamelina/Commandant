@@ -5,14 +5,17 @@ const key_rsa = fs.readFileSync(path.resolve(__dirname, './id_rsa'), 'utf8')
 
 var ssh = new SSH({
   'host': 'localhost', //param
-  'port': 22, //param
+  'port': 00, //param
   'user': 'h',
   'key': key_rsa //fixe 
 });
  var rep = 'repodsfssdc';
+ 
  console.log(ssh.port);
-ssh.port = 22;
-  var promise1 = new Promise( function(resolve, reject) {
+ ssh.port = 22;
+ console.log(ssh.port);
+
+ var promise1 = new Promise( function(resolve, reject) {
     ssh.exec('pwd' , {
       exit :  (code, stdout, stderr ) => code == 0 ? resolve(stdout) :  reject(stderr)
     }).start()
@@ -23,9 +26,7 @@ ssh.port = 22;
       });
   });
   promise1.then(function(value) {
-    var test = false?
-     "ok" : "./";
-    console.log("Vous etes bien deplacer " + test);
+      console.log("Vous etes au " + value);
  //    _self.emit(':ask',value);
     })
     .catch(function(error) {
